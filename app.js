@@ -1,220 +1,1415 @@
-const DEFAULTS={rate:135,service:250,tax:7,card:0,markup:15,rent:1500,insurance:145,electric:250,other:0,toolPayment:0,taxReserve:20,profitGoal:3000,billWeeks:4.3,shopPhone:'2605026222',backend:'https://rolling-wrench-ai-backend.onrender.com',supabase:'https://uxpkqwcmvtqvubibbrek.supabase.co',supabaseKey:'sb_publishable_MIwgVQm6UPIbd76uIm2-tw_NzSw19ym',theme:'green',mode:'shop'};
-function $(id){return document.getElementById(id)}
-const store={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function money(n){return '$'+Number(n||0).toFixed(2)}
-function now(){return new Date().toLocaleString()}
-function settings(){return {...DEFAULTS,...store.get('settings',{})}}
-let current='home',hist=[];
-function show(id){if(!$(id))return;if(current!==id)hist.push(current);current=id;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');scrollTo({top:0,behavior:'smooth'});renderAll()}
-function goBack(){const last=hist.pop();if(last){current=last;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(last)?.classList.add('active')}else show('home')}
-function alertMsg(msg){const a=store.get('alerts',[]);a.unshift({msg,date:now()});store.set('alerts',a.slice(0,20));renderAlerts()}
-function renderAlerts(){const box=$('alertsBox');if(!box)return;const a=store.get('alerts',[]);box.textContent=a.length?a.map(x=>`${x.date} — ${x.msg}`).join('\n'):'NO ALERTS'}
-function clearAlerts(){store.set('alerts',[]);renderAlerts()}
-function signIn(){const n=$('loginName').value.trim();if(!n)return alert('Enter employee name');localStorage.setItem('employeeName',n);$('login').classList.add('hide');alertMsg(n+' signed in')}
-function quickStart(){localStorage.setItem('employeeName','James Jacobs');$('login').classList.add('hide')}
-function loadLogin(){if(localStorage.getItem('employeeName'))$('login').classList.add('hide')}
-function setTheme(t){document.body.className=document.body.className.replace(/\b(green|orange|red|blue|night|chrome|patriot|forge|carbon|diamond|steel|flag|wide|compact|tablet)\b/g,'').trim();document.body.classList.add(t||'green');const s=settings();s.theme=t||'green';store.set('settings',s);document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#00ff7a')}
-function setBackground(bg){document.body.className=document.body.className.replace(/\b(carbon|diamond|steel|flag)\b/g,'').trim();document.body.classList.add(bg||'carbon');const s=settings();s.background=bg||'carbon';store.set('settings',s)}
-function setLayout(l){document.body.className=document.body.className.replace(/\b(wide|compact|tablet|simple)\b/g,'').trim();document.body.classList.add(l||'tablet');const s=settings();s.layout=l||'tablet';store.set('settings',s)}
-function setAccessMode(m){document.body.className=document.body.className.replace(/\b(large|contrast|colorblind)\b/g,'').trim();if(m&&m!=='standard')document.body.classList.add(m);const s=settings();s.access=m||'standard';store.set('settings',s)}
-function setMotion(m){document.body.classList.toggle('reduced',m==='reduced');const s=settings();s.motion=m||'normal';store.set('settings',s)}
-function setMode(m){const s=settings();s.mode=m;store.set('settings',s);$('modeBadge').textContent=m==='roadside'?'ROADSIDE MODE':'SHOP MODE';$('serviceToggle').checked=m==='roadside';$('shopBtn')?.classList.toggle('active',m!=='roadside');$('roadBtn')?.classList.toggle('active',m==='roadside');alertMsg((m==='roadside'?'Roadside':'Shop')+' mode')}
-function saveSettings(){const s=settings();s.rate=+$('setRate').value||DEFAULTS.rate;s.rent=+$('rent')?.value||DEFAULTS.rent;s.insurance=+$('insurance')?.value||DEFAULTS.insurance;s.electric=+$('electric')?.value||DEFAULTS.electric;s.other=+$('otherExpense')?.value||0;s.toolPayment=+$('toolPayment')?.value||0;s.taxReserve=+$('taxReserve')?.value||20;s.profitGoal=+$('profitGoal')?.value||3000;s.billWeeks=+$('billWeeks')?.value||4.3;s.backend=$('backendUrl').value.trim()||DEFAULTS.backend;s.supabase=$('supabaseUrl').value.trim()||DEFAULTS.supabase;s.supabaseKey=$('supabaseKey').value.trim()||DEFAULTS.supabaseKey;s.theme=$('theme').value||'green';s.background=$('bgStyle')?.value||'carbon';s.layout=$('layoutStyle')?.value||'tablet';s.access=$('accessMode')?.value||'standard';s.motion=$('motionMode')?.value||'normal';s.owner=$('ownerName').value.trim()||'James Jacobs';s.role=$('role').value;store.set('settings',s);setTheme(s.theme);setBackground(s.background);setLayout(s.layout);setAccessMode(s.access);setMotion(s.motion);$('settingsOut').textContent='Settings saved. '+now();alertMsg('Settings saved')}
-function loadSettings(){const s=settings();$('quoteRate').value=s.rate;$('serviceCall').value=s.service;$('taxRate').value=s.tax;$('cardFee').value=s.card;$('partsMarkup').value=s.markup;$('rent').value=s.rent;$('insurance').value=s.insurance;$('electric').value=s.electric;$('otherExpense').value=s.other;if($('toolPayment'))$('toolPayment').value=s.toolPayment||0;if($('taxReserve'))$('taxReserve').value=s.taxReserve||20;if($('profitGoal'))$('profitGoal').value=s.profitGoal||3000;if($('billWeeks'))$('billWeeks').value=s.billWeeks||4.3;$('backendUrl').value=s.backend;$('supabaseUrl').value=s.supabase;$('supabaseKey').value=s.supabaseKey;$('setRate').value=s.rate;$('ownerName').value=s.owner||localStorage.getItem('employeeName')||'James Jacobs';$('theme').value=s.theme||'green'; if($('bgStyle')) $('bgStyle').value=s.background||'carbon'; if($('layoutStyle')) $('layoutStyle').value=s.layout||'tablet'; setTheme(s.theme||'green');setBackground(s.background||'carbon');setLayout(s.layout||'tablet');setMode(s.mode||'shop')}
-async function decodeVin(){const vin=$('vin').value.trim().toUpperCase();if(!vin)return alert('Enter VIN');$('truckOut').textContent='Decoding VIN...';try{const r=await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json');const d=(await r.json()).Results?.[0]||{};$('year').value=d.ModelYear||$('year').value;$('make').value=d.Make||$('make').value;$('model').value=d.Model||$('model').value;$('engine').value=d.EngineModel||d.EngineManufacturer||$('engine').value;$('truckOut').textContent='VIN decoded. Verify engine/transmission before quote.';saveTruck(false)}catch(e){$('truckOut').textContent='VIN decode failed: '+e.message}}
-function saveTruck(showAlert=true){const t={vin:$('vin').value.trim().toUpperCase(),unit:$('unit').value.trim(),year:$('year').value.trim(),make:$('make').value.trim(),model:$('model').value.trim(),engine:$('engine').value.trim(),mileage:$('mileage').value.trim()};store.set('truck',t);if(showAlert)alertMsg('Truck saved');renderAll()}
-function clearTruck(){['vin','unit','year','make','model','engine','mileage'].forEach(id=>$(id).value='');store.set('truck',{});renderAll()}
-async function saveCustomer(){
-  const c={
-    name:$('custName').value.trim(),
-    phone:$('custPhone').value.trim(),
-    email:$('custEmail').value.trim(),
-    address:$('custAddress').value.trim()
+const SUPABASE_URL = "https://uxpkqwcmvtqvubibbrek.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4cGtxd2NtdnRxdnViaWJicmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMzk4NjQsImV4cCI6MjA5MjgxNTg2NH0.afiaSFqkRFEXW5nPQVRXKZcpKkS6iF3T_hTQC2P15HQ";
+const API_URL = "https://uxpkqwcmvtqvubibbrek.supabase.co/functions/v1/oracle-parts-search";
+
+const $ = id => document.getElementById(id);
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const supabase = supabaseClient;
+const EMBEDDING_ROUTER_URL = SUPABASE_URL + "/functions/v1/embedding-router";
+
+function setValue(id,val){
+  const el = $(id);
+  if(el) el.value = val || "";
+}
+
+function safeText(value){
+  return String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
+}
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  if($(id)) $(id).classList.add("active");
+
+  document.querySelectorAll(".bottomNav button").forEach(b=>b.classList.remove("active"));
+
+  const map = {home:1,dieselAI:2,faultDoctor:2,parts:3,schematics:4,repairHud:4,settings:5,invoice:5,team:5,voice:5,vin:1,visionAI:4,askCecil:2,verifiedFix:5,smartKits:4};
+  const index = map[id] || 1;
+  const btn = document.querySelector(`.bottomNav button:nth-child(${index})`);
+  if(btn) btn.classList.add("active");
+
+  $("sideMenu")?.classList.remove("open");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function toggleSideMenu(){ $("sideMenu")?.classList.toggle("open"); }
+function underConstruction(name){ alert(name + " is under construction.\n\nThis button is ready. Backend feature coming soon."); }
+
+function getShop(){
+  return {
+    name:"Rolling Wrench Diesel LLC", phone:"260-502-6222", website:"www.rollingwrenchdiesel.com",
+    laborRate:"135", serviceCall:"250", tax:"0", cardFee:"0",
+    terms:"Payment due upon completion. Parts and labor warranty subject to shop policy.",
+    ...JSON.parse(localStorage.getItem("shopSettings") || "{}")
   };
-  if(!c.name && !c.phone){alert('Enter customer name or phone');return;}
-  store.set('customer',c);
-  renderAll();
+}
+
+function saveSettings(){
+  const shop = {
+    name:$("shopName")?.value || "Rolling Wrench Diesel LLC",
+    phone:$("shopPhone")?.value || "260-502-6222",
+    website:$("shopWebsite")?.value || "www.rollingwrenchdiesel.com",
+    laborRate:$("defaultLaborRate")?.value || "135",
+    serviceCall:$("defaultServiceCall")?.value || "250",
+    tax:$("defaultTax")?.value || "0",
+    cardFee:$("defaultCardFee")?.value || "0",
+    terms:$("shopTerms")?.value || ""
+  };
+  localStorage.setItem("shopSettings", JSON.stringify(shop));
+  loadSettings();
+  if($("settingsOut")) $("settingsOut").textContent = "Settings saved.";
+}
+
+function loadSettings(){
+  const s = getShop();
+  setValue("shopName",s.name); setValue("shopPhone",s.phone); setValue("shopWebsite",s.website);
+  setValue("defaultLaborRate",s.laborRate); setValue("defaultServiceCall",s.serviceCall);
+  setValue("defaultTax",s.tax); setValue("defaultCardFee",s.cardFee); setValue("shopTerms",s.terms);
+  setValue("laborRate",s.laborRate); setValue("serviceCall",s.serviceCall); setValue("taxRate",s.tax); setValue("cardFee",s.cardFee);
+}
+
+function getActiveTruck(){ return JSON.parse(localStorage.getItem("activeTruck") || "{}"); }
+function updateActiveTruckBar(){
+  const t = getActiveTruck();
+  if($("activeVin")) $("activeVin").textContent = t.vin || "NONE";
+  if($("activeYear")) $("activeYear").textContent = t.year || "----";
+  if($("activeMake")) $("activeMake").textContent = t.make || "----";
+  if($("activeModel")) $("activeModel").textContent = t.model || "----";
+  if($("activeEngine")) $("activeEngine").textContent = t.engine || "----";
+  if($("activeEsn")) $("activeEsn").textContent = t.esn || "----";
+  if($("activeCpl")) $("activeCpl").textContent = t.cpl || "----";
+}
+
+function saveActiveTruck(){
+  const truck = {
+    vin:$("vinGlobal")?.value.trim().toUpperCase() || "",
+    year:$("yearGlobal")?.value.trim() || "",
+    make:$("makeGlobal")?.value.trim() || "",
+    model:$("modelGlobal")?.value.trim() || "",
+    engine:$("engine")?.value.trim() || "",
+    esn:$("esnGlobal")?.value.trim() || "",
+    cpl:$("cplGlobal")?.value.trim() || ""
+  };
+  localStorage.setItem("activeTruck", JSON.stringify(truck));
+  setValue("invoiceVin",truck.vin);
+  setValue("invoiceTruck",`${truck.year} ${truck.make} ${truck.model}`.trim());
+  updateActiveTruckBar();
+  alert("Active truck saved.");
+}
+
+function loadActiveTruckIntoFields(){
+  const t = getActiveTruck();
+  if(!t.vin) return;
+  setValue("vinGlobal",t.vin); setValue("yearGlobal",t.year); setValue("makeGlobal",t.make); setValue("modelGlobal",t.model);
+  setValue("engine",t.engine); setValue("esnGlobal",t.esn); setValue("cplGlobal",t.cpl);
+  setValue("invoiceVin",t.vin); setValue("invoiceTruck",`${t.year || ""} ${t.make || ""} ${t.model || ""}`.trim());
+}
+
+function clearVehicleData(){
+  localStorage.removeItem("activeTruck");
+  ["vinGlobal","yearGlobal","makeGlobal","modelGlobal","engine","esnGlobal","cplGlobal","invoiceVin","invoiceTruck"].forEach(id=>setValue(id,""));
+  updateActiveTruckBar(); alert("Active truck cleared.");
+}
+
+function ctx(){
+  const t=getActiveTruck();
+  return `VIN: ${$("vinGlobal")?.value || $("invoiceVin")?.value || t.vin || "none"}\nYear: ${$("yearGlobal")?.value || t.year || "unknown"}\nMake: ${$("makeGlobal")?.value || t.make || "unknown"}\nModel: ${$("modelGlobal")?.value || t.model || "unknown"}\nEngine: ${$("engine")?.value || t.engine || "unknown"}\nESN: ${$("esnGlobal")?.value || t.esn || "unknown"}\nCPL: ${$("cplGlobal")?.value || t.cpl || "unknown"}`.trim();
+}
+
+async function callOracle(payload){
+  const body = {
+    vin: payload.vin ?? $("vinGlobal")?.value ?? $("invoiceVin")?.value ?? getActiveTruck().vin ?? null,
+    esn: payload.esn ?? $("esnGlobal")?.value ?? getActiveTruck().esn ?? null,
+    cpl: payload.cpl ?? $("cplGlobal")?.value ?? getActiveTruck().cpl ?? null,
+    year: payload.year ?? $("yearGlobal")?.value ?? getActiveTruck().year ?? "",
+    make: payload.make ?? $("makeGlobal")?.value ?? getActiveTruck().make ?? "",
+    model: payload.model ?? $("modelGlobal")?.value ?? getActiveTruck().model ?? "",
+    engine: payload.engine ?? $("engine")?.value ?? getActiveTruck().engine ?? "",
+    mode: payload.mode || "diesel_doctor",
+    part_query: payload.part_query || payload.question || payload.query || "",
+    question: payload.question || payload.part_query || payload.query || "",
+    note: payload.note || "",
+    vehicleContext: ctx()
+  };
+
+  const res = await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer " + SUPABASE_KEY},body:JSON.stringify(body)});
+  const data = await res.json().catch(()=>({error:"Invalid JSON response from backend"}));
+  if(!res.ok) throw new Error(data.error || JSON.stringify(data));
+  return data;
+}
+
+function formatOracleData(data){
+  const d = data?.data || data || {};
+  if(typeof data === "string") return data;
+  if(data.answer) return data.answer;
+  if(data.message) return data.message;
+  return `PART: ${d.oem_part || d.part || "UNKNOWN"}\nYEAR: ${d.year || "UNKNOWN"}\nMAKE: ${d.make || "UNKNOWN"}\nMODEL: ${d.model || "UNKNOWN"}\nENGINE: ${d.engine || "UNKNOWN"}\nVIN: ${d.vin || "NO VIN"}\nESN: ${d.esn || "NO ESN"}\nCPL: ${d.cpl || "NO CPL"}\nFITMENT: ${d.verified_fitment ? "VIN / ESN / CPL CONTEXT PROVIDED" : "NEEDS VIN / ESN / CPL"}\n\nSOURCE: ${data.source || "oracle"}\n\nNOTES:\n${(d.notes || []).join("\n") || "No notes returned."}`.trim();
+}
+
+function renderOracleCard(targetId,title,data){
+  const d = data?.data || {};
+  const notes = Array.isArray(d.notes) ? d.notes.join("<br>") : (d.notes || data?.answer || "No notes returned.");
+  $(targetId).innerHTML = `<div class="oracleCard"><div class="oracleTitle">${safeText(title)}</div><div class="vinGrid"><div><b>PART</b><span>${safeText(d.oem_part || d.part || "UNKNOWN")}</span></div><div><b>YEAR</b><span>${safeText(d.year || "UNKNOWN")}</span></div><div><b>MAKE</b><span>${safeText(d.make || "UNKNOWN")}</span></div><div><b>MODEL</b><span>${safeText(d.model || "UNKNOWN")}</span></div><div><b>ENGINE</b><span>${safeText(d.engine || "UNKNOWN")}</span></div><div><b>FITMENT</b><span>${d.verified_fitment ? "YES" : "NEEDS VIN / ESN"}</span></div><div><b>VIN</b><span>${safeText(d.vin || getActiveTruck().vin || "No VIN")}</span></div><div><b>SOURCE</b><span>${safeText(data?.source || "oracle")}</span></div></div><div class="oracleNote">${safeText(notes).replace(/\n/g,"<br>")}</div></div>`;
+}
+
+async function decodeVin(){
+  const vin = $("vinGlobal")?.value.trim().toUpperCase() || "";
+  if(!vin) return alert("Enter VIN first.");
+  $("vinOut").textContent = "Decoding VIN...";
   try{
-    await supabaseInsert('customers',c);
-    alertMsg('Customer saved to Supabase');
-    alert('Customer saved to Supabase');
+    const data = await callOracle({vin,part_query:"VIN decode",mode:"vin_decode"});
+    const d = data?.data || {};
+    setValue("yearGlobal",d.year || ""); setValue("makeGlobal",d.make || ""); setValue("modelGlobal",d.model || ""); setValue("engine",d.engine || "");
+    if(d.esn) setValue("esnGlobal",d.esn); if(d.cpl) setValue("cplGlobal",d.cpl);
+    saveActiveTruck();
+    renderOracleCard("vinOut","VIN DECODE SUCCESS",data);
+    $("vinOut").innerHTML += `<div class="smartNote">Saved as active truck.</div>`;
+  }catch(e){ $("vinOut").textContent = "VIN ERROR: " + e.message; }
+}
+
+function smartSearchTerm(q, data){
+  const d=data?.data||{};
+  return d.oem_part || d.part || d.part_number || q || $("partNote")?.value.trim() || getActiveTruck().engine || "";
+}
+
+async function askPart(){
+  const q = $("partq")?.value.trim() || "";
+  const note = $("partNote")?.value.trim() || "";
+  if(!q && !note){ $("partOut").textContent = "Enter part number, part name, VIN, ESN, CPL, or description."; return; }
+  $("partOut").textContent = "Running Oracle + Universal Diesel Database...";
+
+  try{
+    const oracleData = await callOracle({part_query:q || note,note,mode:"parts_lookup"});
+    renderOracleCard("partOut","ORACLE VERIFIED PART LOOKUP",oracleData);
+
+    const term = smartSearchTerm(q || note, oracleData);
+    const universal = await universalSearch(term);
+    renderUniversalResults("partOut", universal, term);
+
+    const repair = await getRepairKit(term);
+    renderRepairKit("partOut", repair);
   }catch(e){
-    alertMsg('Customer saved locally only: '+e.message);
-    alert('Customer saved locally only: '+e.message);
+    $("partOut").textContent = "SEARCH ERROR: " + e.message;
   }
 }
-function clearCustomer(){['custName','custPhone','custEmail','custAddress'].forEach(id=>$(id).value='');store.set('customer',{});renderAll()}
-let activeClock=store.get('activeClock','A');
-let clocks={A:{elapsed:0,running:false,start:0,label:'',stopped:false},B:{elapsed:0,running:false,start:0,label:'',stopped:false},C:{elapsed:0,running:false,start:0,label:'',stopped:false}};
-function loadClocks(){clocks={...clocks,...store.get('clocks',{})}}
-function saveClocks(){const el=$('activeClockLabel');if(el&&clocks[activeClock])clocks[activeClock].label=el.value;['A','B','C'].forEach(k=>{const old=$('clock'+k+'Label');if(old)clocks[k].label=old.value});store.set('activeClock',activeClock);store.set('clocks',clocks)}
-function selectClock(k){saveClocks();activeClock=k;store.set('activeClock',k);renderClocks();alertMsg('Clock '+k+' selected')}
-function clockMs(k){const c=clocks[k];return c.elapsed+(c.running?Date.now()-c.start:0)}
-function hours(k){return clockMs(k)/36e5}
-function clockStart(k){const c=clocks[k];if(!c.running){c.running=true;c.stopped=false;c.start=Date.now();alertMsg('Clock '+k+' running')}saveClocks();renderClocks()}
-function clockPause(k){const c=clocks[k];if(c.running){c.elapsed+=Date.now()-c.start;c.running=false;c.start=0;alertMsg('Clock '+k+' paused')}saveClocks();renderClocks()}
-function clockStop(k){const c=clocks[k];if(c.running){c.elapsed+=Date.now()-c.start;c.running=false;c.start=0;}c.stopped=true;saveClocks();renderClocks();alertMsg('Clock '+k+' stopped at '+$('clock'+k+'Time').textContent+' / '+$('clock'+k+'Money').textContent)}
-function clockReset(k){clocks[k]={elapsed:0,running:false,start:0,label:'',stopped:false};$('clock'+k+'Label').value='';saveClocks();renderClocks();alertMsg('Clock '+k+' cleared')}
-function clockToInvoice(k){const h=hours(k);$('quoteHours').value=h.toFixed(2);$('invoiceNotes').value+=`\nClock ${k}: ${h.toFixed(2)} hrs ${money(h*settings().rate)}`;show('invoice')}
-function renderClocks(){
-  ['A','B','C'].forEach(k=>{
-    const ms=clockMs(k),sec=Math.floor(ms/1000),h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=sec%60;
-    const rate=+$('quoteRate')?.value||settings().rate;
-    const time=[h,m,ss].map(x=>String(x).padStart(2,'0')).join(':');
-    const status=clocks[k].running?'RUNNING':(clocks[k].stopped?'STOPPED':(ms?'PAUSED':'READY'));
-    const oldTime=$('clock'+k+'Time'); if(oldTime) oldTime.textContent=time;
-    const oldMoney=$('clock'+k+'Money'); if(oldMoney) oldMoney.textContent=money(ms/36e5*rate);
-    const oldStatus=$('clock'+k+'Status'); if(oldStatus) oldStatus.textContent=status;
-    const oldLabel=$('clock'+k+'Label'); if(oldLabel) oldLabel.value=clocks[k].label||'';
-    const chip=$('clock'+k+'Chip'); if(chip){chip.textContent=status; chip.className=status.toLowerCase();}
-    const tab=$('clockTab'+k); if(tab) tab.classList.toggle('active',k===activeClock);
-  });
-  const k=activeClock||'A', ms=clockMs(k),sec=Math.floor(ms/1000),h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),ss=sec%60;
-  const rate=+$('quoteRate')?.value||settings().rate;
-  const status=clocks[k].running?'RUNNING':(clocks[k].stopped?'STOPPED':(ms?'PAUSED':'READY'));
-  if($('activeClockTitle')) $('activeClockTitle').textContent='CLOCK '+k;
-  if($('activeClockStatus')) {$('activeClockStatus').textContent=status; $('activeClockStatus').className=status.toLowerCase();}
-  if($('activeClockTime')) $('activeClockTime').textContent=[h,m,ss].map(x=>String(x).padStart(2,'0')).join(':');
-  if($('activeClockMoney')) $('activeClockMoney').textContent=money(ms/36e5*rate);
-  if($('activeClockLabel')) $('activeClockLabel').value=clocks[k].label||'';
-}
-async function lookupPart(){const q=$('partQuery').value.trim();if(!q)return alert('Enter part');$('partsOut').innerHTML='<div class="rw-loading">Searching parts without leaving app...</div>';const local=localPartSearch(q);let backend='';try{const x=await tryBackend('/api/parts',{q,query:q,vehicle:store.get('truck',{})});backend=formatBackendPart(x,q)||'';alertMsg('Backend parts lookup complete')}catch(e){backend='';} $('partsOut').innerHTML=renderPartsResults(q,backend||local);}
-function localPartSearch(q){const parts=[['4376357','Cummins ISX Water Pump','Cooling'],['2881753','Cummins ISX Turbocharger','Air'],['4954200','Cummins ISX Fuel Injector','Fuel'],['4309129','Cummins ISX NOx Sensor','Emissions'],['A4722001601','Detroit DD15 Water Pump','Cooling'],['2293961','PACCAR MX-13 NOx Sensor','Emissions'],['1931652','PACCAR MX-13 Turbo Actuator','Air'],['1848410C94','International DT466 ICP Sensor','Sensors'],['1876105C95','MaxxForce 13 EGR Valve','Emissions']];const s=q.toLowerCase();const hits=parts.filter(p=>p.join(' ').toLowerCase().includes(s)||s.split(/\s+/).some(w=>w.length>2&&p.join(' ').toLowerCase().includes(w)));return hits.length?hits.map(p=>`${p[0]} — ${p[1]} — ${p[2]}\nVERIFY BY VIN/ESN BEFORE ORDERING`).join('\n\n'):`No local match for: ${q}`}
-function formatBackendPart(x,q){if(!x)return'';if(typeof x==='string')return x;return x.answer||x.message||x.result||JSON.stringify(x,null,2)}
-function renderPartsResults(q,text){const safe=esc(text||'No result');const suppliers=['FleetPride','NAPA','O\'Reilly','TruckPro','Dealer','Google'];const ids=['fleetpride','napa','oreilly','truckpro','dealer','google'];const cards=suppliers.map((n,i)=>`<button class="supplierCard" onclick="supplier('${ids[i]}')"><b>${n}</b><span>Search ${esc(q)}</span></button>`).join('');return `<div class="partsResult"><h3>PART RESULT</h3><pre>${safe}</pre><div class="supplierCards">${cards}</div><div class="buttonRow"><button onclick="addPartLine()">ADD TO QUOTE</button><button onclick="scanToInvoice()">ADD CURRENT SCAN TO INVOICE</button></div></div>`}
-function supplier(s){const q=encodeURIComponent($('partQuery').value||'diesel truck parts'); if(s==='oreilly')s='oreilly'; const urls={fleetpride:`https://www.google.com/search?q=site:fleetpride.com+${q}`,napa:`https://www.napaonline.com/en/search?text=${q}`,oreilly:`https://www.oreillyauto.com/search?q=${q}`,truckpro:`https://www.google.com/search?q=site:truckpro.com+${q}`,google:`https://www.google.com/search?q=${q}`,dealer:`https://www.google.com/maps/search/heavy+duty+truck+parts+${q}`};window.open(urls[s],'_blank')}
-function addPartLine(){const q=$('partQuery').value.trim();if(!q)return; $('quoteDesc').value+='\nPart: '+q; alertMsg('Part added to quote notes')}
-function clearParts(){$('partQuery').value='';$('partsOut').textContent=''}
-async function scanImage(e){const f=e.target.files?.[0];if(!f)return;const p=$('scanPreview');p.src=URL.createObjectURL(f);p.style.display='block';$('scanOut').textContent='Reading image...';try{if(!window.Tesseract)throw new Error('OCR library not loaded');const r=await Tesseract.recognize(f,'eng');$('scanText').value=r.data.text||'';$('scanOut').textContent='OCR complete. Tap PARSE.'}catch(err){$('scanOut').textContent='OCR failed: '+err.message}}
-function parsedScan(){const text=$('scanText').value||'';const prices=[...(text.matchAll(/\$?\s*(\d{1,5}\.\d{2})/g))].map(m=>m[1]);const part=(text.match(/\b[A-Z]{0,4}\d{4,10}[A-Z0-9-]{0,8}\b/i)||[''])[0];const vendor=(text.match(/(FleetPride|NAPA|O.?Reilly|TruckPro|Cummins|Detroit|Peterbilt|Kenworth|Freightliner)/i)||[''])[0];return{part,price:prices.pop()||'',vendor,text}}
-function parseScan(){const p=parsedScan();$('scanOut').textContent=`VENDOR: ${p.vendor||'UNKNOWN'}\nPART: ${p.part||'UNKNOWN'}\nPRICE: ${p.price||'UNKNOWN'}\nTYPE: ${$('scanType').value}`}
-function scanToQuote(){parseScan();const p=parsedScan();if(p.price)$('quoteParts').value=(+$('quoteParts').value||0)+parseFloat(p.price);if(p.part)$('quoteDesc').value+=`\nScanned part: ${p.part} ${p.vendor?`(${p.vendor})`:''}`;show('quote')}
-function scanToInvoice(){parseScan();$('invoiceNotes').value+='\nSCAN:\n'+$('scanOut').textContent;scanToQuote();show('invoice')}
-function clearScan(){$('scanText').value='';$('scanOut').textContent='';$('scanFile').value='';$('scanPreview').style.display='none'}
-function sayQuote(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return alert('Voice not supported on this browser');const r=new SR();r.lang='en-US';r.onresult=e=>{const t=e.results[0][0].transcript;$('quoteJob').value=t;autoBuildFromWords(t)};r.start()}
-function autoBuildFromWords(t){const s=t.toLowerCase();$('quoteDesc').value=t; if(s.includes('brake')){$('quoteHours').value=s.includes('trailer')?'3.5':'4';$('quoteJob').value='Brake Job'} else if(s.includes('clutch')){$('quoteHours').value='11';$('quoteJob').value='Clutch Job'} else if(s.includes('water pump')){$('quoteHours').value='4';$('quoteJob').value='Water Pump'} else if(s.includes('diagnos')){$('quoteHours').value='1';$('quoteJob').value='Diagnostic'} buildQuote()}
-function calcTotals(){const h=+$('quoteHours').value||0,r=+$('quoteRate').value||settings().rate,rawParts=+$('quoteParts').value||0,markup=+$('partsMarkup').value||0,p=rawParts*(1+markup/100),svc=$('serviceToggle').checked?(+$('serviceCall').value||0):0,taxPct=+$('taxRate').value||0,cardPct=+$('cardFee').value||0;const labor=h*r,sub=labor+p+svc,tax=sub*taxPct/100,card=(sub+tax)*cardPct/100,total=sub+tax+card;return{h,r,rawParts,markup,p,svc,labor,sub,tax,card,total}}
-function businessInfo(){const s=settings();return {name:'Rolling Wrench Diesel', owner:s.owner||'James Jacobs', phone:'260-502-6222', web:'www.rollingwrenchdiesel.com'}}
-function truckLine(){const t=store.get('truck',{});return [t.unit,t.year,t.make,t.model,t.engine].filter(Boolean).join(' ')||'—'}
-function invoiceHeader(title){
-  const b=businessInfo(), c=store.get('customer',{}), t=store.get('truck',{});
-  return `<div class="rw-invoice">
-    <div class="rw-inv-top">
-      <div class="rw-logoBox"><img src="logo.svg" alt="RW"></div>
-      <div class="rw-shop">
-        <h2>${esc(b.name)}</h2>
-        <div>${esc(b.owner)} • ${esc(b.phone)}</div>
-        <div>${esc(b.web)}</div>
-      </div>
-      <div class="rw-inv-title"><b>${esc(title)}</b><span>${now()}</span></div>
-    </div>
-    <div class="rw-inv-grid">
-      <div><label>BILL TO</label><strong>${esc(c.name||'—')}</strong><span>${esc(c.phone||'')}</span><span>${esc(c.email||'')}</span></div>
-      <div><label>UNIT / TRUCK</label><strong>${esc(truckLine())}</strong><span>VIN: ${esc(t.vin||'—')}</span><span>Mileage: ${esc(t.mileage||'—')}</span></div>
-    </div>`;
-}
-function invoiceMoneyTable(x){
-  return `<div class="rw-money-table">
-    <div><span>Labor</span><b>${money(x.labor)}</b></div>
-    <div><span>Service Call</span><b>${money(x.svc)}</b></div>
-    <div><span>Parts</span><b>${money(x.p)}</b></div>
-    <div><span>Tax</span><b>${money(x.tax)}</b></div>
-    <div><span>Card Fee</span><b>${money(x.card)}</b></div>
-    <div class="rw-total"><span>TOTAL DUE</span><b>${money(x.total)}</b></div>
-  </div>`;
-}
-function invoiceTerms(){return `<div class="rw-terms"><b>Terms:</b> Payment due upon completion unless otherwise agreed. Parts pricing and availability may change. Customer authorizes Rolling Wrench Diesel to perform the listed work. Recommended re-checks and road-test limitations should be noted on the invoice when applicable.</div>`}
-function buildQuote(){
-  const x=calcTotals(), signed=quoteSigData()&&!isCanvasBlank($('quoteSigCanvas'));
-  let sig=signed?`<div class="rw-sig-block"><b>Customer Quote Approval</b><img src="${quoteSigData()}" alt="Quote signature"></div>`:`<div class="rw-sig-block"><b>Customer Quote Approval</b><div class="rw-not-signed">NOT SIGNED</div></div>`;
-  $('quoteOut').innerHTML=invoiceHeader('QUOTE')+`<div class="rw-section"><h3>${esc($('quoteJob').value||'Quote')}</h3><p>${esc($('quoteDesc').value||'').replace(/\n/g,'<br>')}</p></div>${invoiceMoneyTable(x)}${invoiceTerms()}${sig}</div>`;
-  store.set('lastQuote',{...x,html:$('quoteOut').innerHTML,plain:$('quoteOut').innerText,signed,date:now()});updateFinance();alertMsg(signed?'Quote built with approval signature':'Quote built')
-}
-function clearQuote(){['quoteJob','quoteHours','quoteParts','quoteDesc'].forEach(id=>$(id).value='');$('quoteOut').innerHTML='';clearQuoteSignature(false)}
-function writeProfessional(type){const map={quote:'quoteDesc',workorder:'woWork'};const id=map[type]||'invoiceNotes';const v=$(id).value.trim();$(id).value='Work will be completed professionally, verified after repair, and documented for customer records. '+v;alertMsg('Professional wording added')}
-function quoteSmsText(){buildQuote();return $('quoteOut').innerText+'\n\nReply APPROVED to authorize scheduling. Reply with questions if changes are needed.'}
-function sendQuoteToCustomer(){const c=store.get('customer',{});location.href=`sms:${c.phone||''}?&body=${encodeURIComponent(quoteSmsText())}`}
-function sendSignedQuoteToShop(){buildQuote();const s=settings();const msg='SIGNED QUOTE / CUSTOMER APPROVAL\n\n'+$('quoteOut').innerText;location.href=`sms:${s.shopPhone||'2605026222'}?&body=${encodeURIComponent(msg)}`}
-async function saveQuote(){buildQuote();const q=store.get('lastQuote',{});const list=store.get('quotes',[]);list.unshift(q);store.set('quotes',list);try{await supabaseInsert('quotes',{customer:store.get('customer',{}),truck:store.get('truck',{}),total:q.total,status:q.signed?'approved':'draft',html:q.html,created_at:new Date().toISOString()});alertMsg('Quote saved local + Supabase')}catch(e){alertMsg('Quote saved local only: '+e.message)}updateFinance()}
-function quoteToInvoice(){buildQuote();$('invoiceNotes').value=$('quoteOut').innerText;show('invoice')}
-function buildWorkOrder(){$('woOut').innerHTML=invoiceHeader('WORK ORDER')+`<div class="rw-section"><h3>Complaint</h3><p>${esc($('woComplaint').value).replace(/\n/g,'<br>')}</p></div><div class="rw-section"><h3>Diagnosis</h3><p>${esc($('woDiagnosis').value).replace(/\n/g,'<br>')}</p></div><div class="rw-section"><h3>Work Performed</h3><p>${esc($('woWork').value).replace(/\n/g,'<br>')}</p></div>${invoiceTerms()}</div>`;alertMsg('Work order built')}
-function clearWorkOrder(){['woComplaint','woDiagnosis','woWork'].forEach(id=>$(id).value='');$('woOut').innerHTML=''}
-function workToInvoice(){buildWorkOrder();$('invoiceNotes').value=$('woOut').innerText;show('invoice')}
-function sigData(){return $('sigCanvas').toDataURL('image/png')}
-function isCanvasBlank(c){const blank=document.createElement('canvas');blank.width=c.width;blank.height=c.height;return c.toDataURL()===blank.toDataURL()}
-function buildOneInvoice(copyTitle,x,signed){
-  const work=esc($('invoiceNotes').value||$('quoteDesc').value||'').replace(/\n/g,'<br>');
-  let html=invoiceHeader(copyTitle)+`<div class="rw-section"><h3>Work Performed / Invoice Notes</h3><p>${work||'—'}</p></div>`+invoiceMoneyTable(x)+invoiceTerms()+`<div class="rw-sig-block"><b>Customer Signature</b>`;
-  if(signed) html+=`<img src="${sigData()}" alt="Customer signature">`;
-  else html+=`<div class="rw-not-signed">NOT SIGNED</div>`;
-  html+=`</div></div>`;
-  return html;
-}
-function buildInvoice(){
-  const x=calcTotals(), copy=$('invoiceType').value, canvas=$('sigCanvas'), signed=!isCanvasBlank(canvas);
-  let html='';
-  if(copy==='Both Copies') html=buildOneInvoice('CUSTOMER INVOICE COPY',x,signed)+'<div class="rw-page-break"></div>'+buildOneInvoice('SHOP COPY',x,signed);
-  else html=buildOneInvoice(copy.toUpperCase(),x,signed);
-  $('invoiceOut').innerHTML=html;
-  store.set('lastInvoice',{total:x.total,date:now(),html,plain:$('invoiceOut').innerText,signed});
-  updateFinance();alertMsg(signed?'Invoice built with signature':'Invoice built - no signature')
-}
-function clearInvoice(){['invoiceNotes'].forEach(id=>$(id).value='');$('invoiceOut').innerHTML='';clearSignature()}
-function textInvoice(){buildInvoice();const c=store.get('customer',{});location.href=`sms:${c.phone||''}?&body=${encodeURIComponent($('invoiceOut').innerText)}`}
-function sendInvoiceToShop(){buildInvoice();const s=settings();location.href=`sms:${s.shopPhone||'2605026222'}?&body=${encodeURIComponent('SHOP COPY / INVOICE\n\n'+$('invoiceOut').innerText)}`}
-async function shareInvoice(){buildInvoice();const text=$('invoiceOut').innerText;if(navigator.share){try{await navigator.share({title:'Rolling Wrench Diesel Invoice',text});alertMsg('Invoice share opened');return}catch(e){}}await navigator.clipboard?.writeText(text);alertMsg('Invoice copied for sharing');alert('Invoice copied for sharing')}
 
-async function saveInvoice(){buildInvoice();const list=store.get('invoices',[]);list.unshift(store.get('lastInvoice',{}));store.set('invoices',list);try{await supabaseInsert('invoices',{customer:store.get('customer',{}),truck:store.get('truck',{}),total:store.get('lastInvoice',{}).total,html:store.get('lastInvoice',{}).html,created_at:new Date().toISOString()});alertMsg('Invoice saved local + Supabase')}catch(e){alertMsg('Invoice saved local. Supabase unavailable.')}updateFinance()}
-function addSchedule(){const list=store.get('schedule',[]);list.unshift({date:$('schDate').value,time:$('schTime').value,customer:$('schCustomer').value,job:$('schJob').value});store.set('schedule',list);renderSchedule();alertMsg('Schedule added')}
-function renderSchedule(){const l=store.get('schedule',[]);$('scheduleOut').textContent=l.length?l.map(x=>`${x.date} ${x.time} — ${x.customer} — ${x.job}`).join('\n'):'NO SCHEDULED WORK'}
-function clearSchedule(){store.set('schedule',[]);renderSchedule()}
-function updateFinance(){const s=settings();const inv=store.get('invoices',[]).reduce((sum,i)=>sum+(+i.total||0),0);const q=store.get('quotes',[]).reduce((sum,i)=>sum+(+i.total||0),0);const h=['A','B','C'].reduce((sum,k)=>sum+hours(k),0),labor=h*(+$('quoteRate')?.value||s.rate);const over=(+$('rent')?.value||0)+ (+$('insurance')?.value||0)+ (+$('electric')?.value||0)+ (+$('otherExpense')?.value||0)+ (+$('toolPayment')?.value||0);const taxRes=(+$('taxReserve')?.value||20)/100;const goal=+$('profitGoal')?.value||0;const weeks=+$('billWeeks')?.value||4.3;const monthlyNeed=over+goal;const weeklyNeed=monthlyNeed/weeks;const hrsNeed=weeklyNeed/(+$('quoteRate')?.value||s.rate);const projected=inv+labor-over-((inv+labor)*taxRes);$('finLabor').textContent=money(labor);$('finParts').textContent=money(+$('quoteParts').value||0);$('finInvoices').textContent=money(inv);$('finBreakEven').textContent=money(over);if($('finShopPayment'))$('finShopPayment').textContent=money(+$('rent')?.value||0);if($('finWeeklyNeed'))$('finWeeklyNeed').textContent=money(weeklyNeed);if($('finHoursNeed'))$('finHoursNeed').textContent=hrsNeed.toFixed(1);if($('finProfit'))$('finProfit').textContent=money(projected)}
-function buildFinancePlan(){updateFinance();const rate=+$('quoteRate')?.value||settings().rate;const over=(+$('rent')?.value||0)+(+$('insurance')?.value||0)+(+$('electric')?.value||0)+(+$('otherExpense')?.value||0)+(+$('toolPayment')?.value||0);const goal=+$('profitGoal')?.value||0;const weeks=+$('billWeeks')?.value||4.3;const need=over+goal;const weekly=need/weeks;const hours=weekly/rate;$('financePlanOut').textContent=`SHOP PAYMENT / BREAK-EVEN PLAN
+async function getRepairKit(component){
+  if(!supabaseClient) throw new Error("Supabase client not loaded.");
+  const term = String(component || "").trim();
+  if(!term) return null;
+  const { data, error } = await supabaseClient
+    .from("repair_kits")
+    .select("*")
+    .or(`component_name.ilike.%${term}%,engine_family.ilike.%${term}%,oem_part_number.ilike.%${term}%`)
+    .limit(3);
+  if(error) return null;
+  return data || [];
+}
 
-Monthly overhead: ${money(over)}
-Monthly profit goal: ${money(goal)}
-Total monthly target: ${money(need)}
-Weekly target: ${money(weekly)}
-Billable hours needed/week @ ${money(rate)}/hr: ${hours.toFixed(1)} hrs
+async function universalSearch(search){
+  if(!supabaseClient) throw new Error("Supabase client not loaded.");
+  const term = String(search || "").trim();
+  if(!term) return {};
+  const { data, error } = await supabaseClient.rpc("universal_diesel_search", { search_text: term });
+  if(error) throw error;
+  return data || {};
+}
 
-Suggested plan:
-- Track every clock hour.
-- Send clock time to invoice.
-- Keep service call ON for roadside work.
-- Add parts markup before sending quote.
-- Save every invoice so finances stay accurate.`}
-function clearFinancePlan(){$('financePlanOut').textContent=''}
-async function testBackend(){const out=$('settingsOut');out.textContent='Testing backend...';const base=(settings().backend||'').replace(/\/$/,'');try{let r=await fetch(base+'/api/health');if(!r.ok)r=await fetch(base);out.textContent='Backend: '+r.status}catch(e){out.textContent='Backend failed: '+e.message}}
-async function testSupabase(){
-  const out=$('settingsOut');out.textContent='Testing Supabase...';
-  const s=settings();
+function card(title, badge, inner, note=""){
+  return `<div class="smartCard"><div class="smartCardTitle"><span>${safeText(title)}</span>${badge?`<span class="badge ${badge.cls||""}">${safeText(badge.text)}</span>`:""}</div>${inner}${note?`<div class="smartNote">${safeText(note)}</div>`:""}</div>`;
+}
+function gridCell(k,v){ return `<div class="smartCell"><b>${safeText(k)}</b><span>${safeText(v || "—")}</span></div>`; }
+function asArray(x){ return Array.isArray(x) ? x : []; }
+
+function renderUniversalResults(targetId, universal, term){
+  if(!universal || typeof universal !== "object") return;
+  const pieces=[];
+  const parts=asArray(universal.parts);
+  const crosses=asArray(universal.cross_refs || universal.part_cross_refs);
+  const torques=asArray(universal.torque_specs);
+  const labor=asArray(universal.labor_times);
+  const failures=asArray(universal.common_failures);
+  const fluids=asArray(universal.fluids_filters);
+  const tests=asArray(universal.diagnostic_tests);
+  const suppliers=asArray(universal.supplier_links);
+
+  if(parts.length){
+    pieces.push(card("DATABASE PART MATCHES",{text:`${parts.length} HIT${parts.length>1?"S":""}`,cls:"good"},`<div class="smartGrid">${parts.slice(0,6).map(p=>gridCell(p.manufacturer || p.brand || "PART", `${p.part_number || p.oem_part_number || "UNKNOWN"} — ${p.description || p.category || ""}`)).join("")}</div>`));
+  }
+  if(crosses.length){
+    pieces.push(card("OEM / AFTERMARKET CROSS REFERENCES",{text:`${crosses.length} REF${crosses.length>1?"S":""}`,cls:"hot"},`<div class="smartGrid">${crosses.slice(0,8).map(p=>gridCell(p.brand || p.source_name || "CROSS", `${p.oem_part_number || p.source_part || p.part_number || ""} → ${p.aftermarket_part_number || p.cross_part || p.cross_ref_number || ""} ${p.confidence_score ? "("+p.confidence_score+")" : ""}`)).join("")}</div>`));
+  }
+  if(labor.length){
+    pieces.push(card("LABOR TIME",{text:"QUOTE READY",cls:"good"},`<div class="smartGrid">${labor.slice(0,4).map(l=>gridCell(l.component_name || l.labor_operation || "LABOR", `${l.labor_hours || "?"} hrs — ${l.difficulty || ""}`)).join("")}</div>`));
+  }
+  if(torques.length){
+    pieces.push(card("TORQUE SPECS",{text:"VERIFY",cls:"warn"},`<div class="smartGrid">${torques.slice(0,6).map(t=>gridCell(t.fastener || t.component_name || "FASTENER", `${t.torque_value || "UNKNOWN"} ${t.sequence_notes || ""}`)).join("")}</div>`));
+  }
+  if(fluids.length){
+    pieces.push(card("FLUIDS / FILTERS",{text:"SERVICE",cls:"good"},`<div class="smartGrid">${fluids.slice(0,4).map(f=>gridCell(f.engine_family || f.service_type || "SERVICE", [f.oil_filter,f.fuel_filter,f.water_separator,f.oil_capacity].filter(Boolean).join(" | "))).join("")}</div>`));
+  }
+  if(failures.length || tests.length){
+    pieces.push(card("DIAGNOSTIC MEMORY",{text:"BUDDY",cls:"hot"},`<div class="smartGrid">${failures.slice(0,3).map(f=>gridCell(f.fault_code || f.symptom || "FAILURE", f.common_fix || f.likely_causes || "Check notes")).join("")}${tests.slice(0,3).map(t=>gridCell(t.test_name || t.fault_code || "TEST", t.pass_fail_specs || t.next_step_if_failed || "Run test")).join("")}</div>`));
+  }
+  if(suppliers.length){
+    pieces.push(card("SUPPLIER LINKS",{text:"BUY",cls:"good"},`<div class="smartGrid">${suppliers.slice(0,4).map(s=>gridCell(s.supplier_name || "SUPPLIER", s.part_number || s.search_url || "")).join("")}</div>`));
+  }
+  if(!pieces.length){
+    pieces.push(card("UNIVERSAL DATABASE",{text:"NO LOCAL HIT",cls:"warn"},`<div class="emptyNote">No local SQL database matches for “${safeText(term)}” yet. Add records to parts, part_cross_refs, repair_kits, labor_times, torque_specs, or common_failures.</div>`));
+  }
+  $(targetId).innerHTML += `<div class="resultGroup">${pieces.join("")}</div>`;
+}
+
+function renderRepairKit(targetId, kits){
+  const list=asArray(kits);
+  if(!list.length) return;
+  for(const k of list.slice(0,3)){
+    $(targetId).innerHTML += card("SMART REPAIR KIT",{text:"KIT",cls:"good"},`<div class="smartGrid">${gridCell("COMPONENT",k.component_name)}${gridCell("ENGINE",k.engine_family)}${gridCell("OEM PART",k.oem_part_number)}${gridCell("LABOR",k.labor_hours ? k.labor_hours+" hrs" : "—")}${gridCell("GASKETS",k.gasket_set)}${gridCell("SEALS",k.seals)}${gridCell("O-RINGS",k.o_rings)}${gridCell("HARDWARE",k.hardware)}</div>`, `${k.torque_specs || ""}\n${k.repair_notes || ""}`.trim());
+  }
+}
+
+async function runDoctorSearch(){
+  const q = $("doctorAsk")?.value.trim() || "";
+  if(!q){ $("doctorOut").textContent = "Ask Rolling Wrench AI a question first."; return; }
+  $("doctorOut").textContent = "Rolling Wrench AI thinking...";
   try{
-    const base=s.supabase.replace(/\/$/,'');
-    const r=await fetch(base+'/rest/v1/customers?select=id&limit=1',{
-      headers:{apikey:s.supabaseKey,Authorization:'Bearer '+s.supabaseKey}
+    const data = await callOracle({part_query:q,question:q,mode:"global_doctor_search"});
+    $("doctorOut").textContent = formatOracleData(data);
+  }catch(e){ $("doctorOut").textContent = "Rolling Wrench AI error: " + e.message; }
+}
+
+async function homeAI(){
+  const q = $("homeAiAsk")?.value.trim() || "";
+  const file = $("homeAiImage")?.files?.[0];
+  if(!q && !file){ $("homeAiOut").textContent = "Ask Rolling Wrench AI a question or add a picture."; return; }
+  $("homeAiOut").textContent = file ? "Reading picture..." : "Thinking...";
+  let note = "";
+  if(file){ const base64 = await imageToBase64(file); note = { image:base64.split(",")[1], question:q || "Analyze uploaded image" }; }
+  try{
+    const data = await callOracle({part_query:q || "Analyze uploaded image",question:q || "Analyze uploaded image",mode:"diesel_ai",note});
+    $("homeAiOut").textContent = formatOracleData(data);
+  }catch(e){ $("homeAiOut").textContent = "Rolling Wrench AI error: " + e.message; }
+}
+
+async function runDiag(){
+  const q = $("diagq")?.value.trim() || "";
+  const note = $("diagNote")?.value.trim() || "";
+  if(!q){ $("diagOut").textContent = "Enter fault code or symptom first."; return; }
+  $("diagOut").textContent = "Fault Doctor running...";
+  try{
+    const data = await callOracle({part_query:q,question:q,note,mode:"fault_doctor"});
+    $("diagOut").textContent = formatOracleData(data);
+  }catch(e){ $("diagOut").textContent = "DIAGNOSTIC ERROR: " + e.message; }
+}
+
+function imageToBase64(file){ return new Promise((resolve,reject)=>{ const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }); }
+function wireImagePreview(){
+  const input = $("homeAiImage"), preview = $("homeAiPreview");
+  if(!input || !preview) return;
+  input.addEventListener("change",()=>{ const file = input.files?.[0]; if(!file) return; preview.src = URL.createObjectURL(file); preview.style.display = "block"; });
+}
+
+function money(n){ return "$" + Number(n || 0).toFixed(2); }
+function buildInvoice(){
+  const shop = getShop();
+  const h = Number($("laborHours")?.value || 0), r = Number($("laborRate")?.value || 0), service = Number($("serviceCall")?.value || 0), parts = Number($("partsCost")?.value || 0), taxPct = Number($("taxRate")?.value || 0), cardPct = Number($("cardFee")?.value || 0);
+  const labor = h*r, subtotal=labor+service+parts, tax=subtotal*(taxPct/100), card=(subtotal+tax)*(cardPct/100), total=subtotal+tax+card;
+  const txt = `${shop.name}\n${shop.phone}\n${shop.website}\n\nCUSTOMER:\n${$("custName")?.value || ""}\n${$("custPhone")?.value || ""}\n\nVEHICLE:\n${$("invoiceTruck")?.value || ""}\nVIN: ${$("invoiceVin")?.value || ""}\n\nWORK:\n${$("laborDesc")?.value || ""}\n\nLabor: ${money(labor)}\nService Call: ${money(service)}\nParts: ${money(parts)}\nTax: ${money(tax)}\nCard Fee: ${money(card)}\n\nTOTAL DUE:\n${money(total)}\n\nTERMS:\n${shop.terms}`.trim();
+  $("quoteOut").textContent = txt;
+}
+function copyText(id){ const text = $(id)?.textContent || ""; navigator.clipboard?.writeText(text); alert("Copied."); }
+function findNearestDealer(){
+  if(!navigator.geolocation){ alert("GPS not supported."); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{ const q = "FleetPride OR Cummins Dealer OR Kenworth OR Peterbilt OR Freightliner Parts"; window.open(`https://www.google.com/maps/search/${encodeURIComponent(q)}/@${pos.coords.latitude},${pos.coords.longitude},12z`,"_blank"); },()=>alert("Location permission denied."));
+}
+function startVoiceInput(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){ alert("Voice input not supported on this browser yet."); return; }
+  const recognition = new SpeechRecognition(); recognition.lang = "en-US"; recognition.onresult = e=>{ const text = e.results[0][0].transcript; if($("homeAiAsk")) $("homeAiAsk").value = text; if($("doctorAsk")) $("doctorAsk").value = text; }; recognition.start();
+}
+const VoiceNavigator = {active:false,toggle(){this.active=!this.active; const btn=$("voice-toggle"); if(btn) btn.textContent=`VOICE: ${this.active ? "ON" : "OFF"}`; if(this.active) this.speak("Rolling Wrench AI Voice Navigator active. Backend feature coming soon.");},speak(text){if(!("speechSynthesis" in window)) return; const msg = new SpeechSynthesisUtterance(text); msg.rate=.9; window.speechSynthesis.speak(msg);}};
+
+window.addEventListener("error",e=>{ localStorage.setItem("diesel_doctor_last_error",`${e.message} line ${e.lineno}`); });
+window.addEventListener("DOMContentLoaded",()=>{ loadSettings(); loadActiveTruckIntoFields(); updateActiveTruckBar(); wireImagePreview(); });
+
+
+/* ===== UNIFIED MERGED MODULES ===== */
+
+function vehicleContext(){ return typeof ctx === "function" ? ctx() : ""; }
+async function callAI(prompt, context, notes){
+  const data = await callOracle({ question: prompt, part_query: notes || prompt, note: context || "", mode:"procedure_genius" });
+  return formatOracleData(data);
+}
+async function askAI(prompt){ return callAI(prompt, vehicleContext(), prompt); }
+async function callOracleAI(prompt){ return callAI(prompt, vehicleContext(), prompt); }
+async function callEmbeddingRouter(question){
+  const res = await fetch(EMBEDDING_ROUTER_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer " + SUPABASE_KEY},body:JSON.stringify({question, vehicleContext:ctx()})});
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || JSON.stringify(data));
+  return data;
+}
+function clearSmartKit(){ ["partsTechEngine","partsTechComponent"].forEach(id=>setValue(id,"")); const out=$("partsTechOut"); if(out) out.textContent="Enter engine and component to build a kit."; }
+
+/* =========================================================
+ROLLING WRENCH AI VISION FRONTEND
+Paste before closing </script>.
+
+Calls Supabase Edge Function:
+rolling-wrench-vision-ai
+========================================================= */
+
+function rwVisionVal(id){
+  return document.getElementById(id)?.value?.trim() || "";
+}
+
+function rollingWrenchVehicleContext(){
+  if(typeof vehicleContext === "function"){
+    try{ return vehicleContext(); }catch(e){}
+  }
+
+  return [
+    rwVisionVal("yearGlobal"),
+    rwVisionVal("makeGlobal"),
+    rwVisionVal("modelGlobal"),
+    rwVisionVal("engineGlobal"),
+    rwVisionVal("vinGlobal") ? "VIN: " + rwVisionVal("vinGlobal") : ""
+  ].filter(Boolean).join(" ");
+}
+
+function previewRollingWrenchVisionImage(){
+  const input = document.getElementById("rwVisionImage");
+  const img = document.getElementById("rwVisionPreview");
+  const file = input?.files?.[0];
+
+  if(!file || !img) return;
+
+  img.src = URL.createObjectURL(file);
+  img.style.display = "block";
+}
+
+function rwFileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function askRollingWrenchVisionAI(){
+  const input = document.getElementById("rwVisionImage");
+  const file = input?.files?.[0];
+  const question =
+    rwVisionVal("rwVisionQuestion") ||
+    rwVisionVal("cecilVisionQuestion") ||
+    rwVisionVal("cecilQuestion") ||
+    rwVisionVal("webAiQuestion") ||
+    "Identify what is shown and explain what to inspect, test, remove, replace, or verify.";
+
+  const out = document.getElementById("rwVisionOut");
+
+  if(!file){
+    alert("Take a picture or choose a saved picture first.");
+    return;
+  }
+
+  if(out) out.textContent = "Rolling Wrench AI is looking at the picture and building a mechanic answer...";
+
+  try{
+    const imageBase64 = await rwFileToBase64(file);
+
+    const apiUrl =
+      (typeof API_URL !== "undefined" && API_URL.includes("/functions/v1/"))
+        ? API_URL.replace(/\/functions\/v1\/.*/, "/functions/v1/rolling-wrench-vision-ai")
+        : "https://uxpkqwcmvtqvubibbrek.supabase.co/functions/v1/rolling-wrench-vision-ai";
+
+    const apiKey =
+      typeof SUPABASE_KEY !== "undefined"
+        ? SUPABASE_KEY
+        : "";
+
+    const payload = {
+      question,
+      context: rollingWrenchVehicleContext(),
+      imageBase64,
+      fileName: file.name || "photo.jpg",
+      imageType: file.type || "image/jpeg"
+    };
+
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": apiKey,
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify(payload)
     });
-    let msg='Supabase: '+r.status;
-    if(r.ok) msg='Supabase: connected';
-    else msg+=' — '+(await r.text()).slice(0,140);
-    out.textContent=msg;
-  }catch(e){out.textContent='Supabase failed: '+e.message}
+
+    const data = await res.json().catch(()=>({}));
+
+    if(!res.ok){
+      throw new Error(data.error || data.message || "Vision AI request failed");
+    }
+
+    if(out) out.textContent = data.answer || "No answer returned.";
+
+  }catch(e){
+    if(out){
+      out.textContent =
+`ROLLING WRENCH AI VISION FAILED:
+${e.message || e}
+
+Check:
+1. Supabase function rolling-wrench-vision-ai is deployed.
+2. OPENAI_API_KEY is set in Supabase secrets.
+3. Your image is not too large. Try a closer/cropped picture.`;
+    }
+  }
 }
-async function supabaseInsert(table,row){
-  const s=settings();
-  const url=`${s.supabase.replace(/\/$/,'')}/rest/v1/${table}`;
-  const r=await fetch(url,{method:'POST',headers:{apikey:s.supabaseKey,Authorization:'Bearer '+s.supabaseKey,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(row)});
-  if(!r.ok){let txt='';try{txt=await r.text()}catch(e){};throw new Error('Supabase '+r.status+' '+txt.slice(0,120));}
-  return true;
+
+function clearRollingWrenchVisionAI(){
+  const input = document.getElementById("rwVisionImage");
+  const img = document.getElementById("rwVisionPreview");
+  const q = document.getElementById("rwVisionQuestion");
+  const out = document.getElementById("rwVisionOut");
+
+  if(input) input.value = "";
+  if(img){
+    img.src = "";
+    img.style.display = "none";
+  }
+  if(q) q.value = "";
+  if(out) out.textContent = "Take or upload a picture and ask Rolling Wrench AI what you need to know.";
 }
-async function tryBackend(path,body){const base=(settings().backend||'').replace(/\/$/,'');const r=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('backend '+r.status);return r.json()}
-function resetApp(){if(confirm('Reset local app data?')){localStorage.clear();location.reload()}}
-function renderAll(){const t=store.get('truck',{}),c=store.get('customer',{});$('activeTruckBox').innerHTML=t.vin?`${esc(t.unit||'')} ${esc(t.year||'')} ${esc(t.make||'')} ${esc(t.model||'')}<br>${esc(t.engine||'')}<br>${esc(t.vin||'')}`:'NO ACTIVE TRUCK';$('activeCustomerBox').innerHTML=c.name?`${esc(c.name)}<br>${esc(c.phone||'')}<br>${esc(c.email||'')}`:'NO CUSTOMER SELECTED';renderClocks();renderAlerts();renderSchedule();updateFinance()}
-function loadFields(){const t=store.get('truck',{}),c=store.get('customer',{});Object.entries({vin:t.vin,unit:t.unit,year:t.year,make:t.make,model:t.model,engine:t.engine,mileage:t.mileage,custName:c.name,custPhone:c.phone,custEmail:c.email,custAddress:c.address}).forEach(([k,v])=>{if($(k))$(k).value=v||''})}
-function setupSignatureCanvas(canvasId){const canvas=$(canvasId);if(!canvas)return;const ctx=canvas.getContext('2d');function resize(){const ratio=Math.max(devicePixelRatio||1,1),rect=canvas.getBoundingClientRect();const old=canvas.width&&canvas.height?canvas.toDataURL():null;canvas.width=Math.max(1,rect.width*ratio);canvas.height=190*ratio;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#000';if(old){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,rect.width,190);img.src=old;}}setTimeout(resize,120);window.addEventListener('resize',resize);let drawing=false;function getPoint(e){const t=e.touches?.[0]||e.changedTouches?.[0]||e;const r=canvas.getBoundingClientRect();return{x:t.clientX-r.left,y:t.clientY-r.top}}function start(e){drawing=true;const p=getPoint(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()}function move(e){if(!drawing)return;const p=getPoint(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault()}function end(e){drawing=false;e.preventDefault()}['pointerdown','touchstart','mousedown'].forEach(ev=>canvas.addEventListener(ev,start,{passive:false}));['pointermove','touchmove','mousemove'].forEach(ev=>canvas.addEventListener(ev,move,{passive:false}));['pointerup','pointercancel','touchend','mouseup','mouseleave'].forEach(ev=>canvas.addEventListener(ev,end,{passive:false}))}
-function initSig(){setupSignatureCanvas('sigCanvas');setupSignatureCanvas('quoteSigCanvas')}
-function clearCanvas(id,notify=true){const c=$(id);if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(notify)alertMsg('Signature cleared')}
-function clearSignature(){clearCanvas('sigCanvas')}
-function clearQuoteSignature(notify=true){clearCanvas('quoteSigCanvas',notify)}
-function quoteSigData(){const c=$('quoteSigCanvas');return c?c.toDataURL('image/png'):''}
-window.addEventListener('DOMContentLoaded',()=>{loadLogin();loadSettings();loadClocks();loadFields();initSig();renderAll();setInterval(()=>{renderClocks();updateFinance();saveClocks()},1000);if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{})});
+
+
+/* =========================================================
+PHASE 18 - VERIFIED FIX SYSTEM
+Requires Supabase table: verified_fixes
+Paste near your other functions, before the closing </script>.
+========================================================= */
+
+function rwVal(id){
+  return document.getElementById(id)?.value?.trim() || "";
+}
+
+async function saveVerifiedFix(){
+  const search = rwVal("vfSearch") || rwVal("partNumber") || rwVal("diagSearch") || rwVal("partSearch");
+  const code = rwVal("vfCode") || rwVal("faultCode");
+  const fix = rwVal("vfFix");
+  const parts = rwVal("vfParts");
+  const laborRaw = rwVal("vfLabor");
+  const notes = rwVal("vfNotes");
+
+  if(!search && !code){
+    alert("Enter a symptom, search term, or fault code.");
+    return;
+  }
+
+  if(!fix){
+    alert("Enter the confirmed fix.");
+    return;
+  }
+
+  const out = document.getElementById("vfOut");
+  if(out) out.textContent = "Saving verified fix...";
+
+  const payload = {
+    search_term: search,
+    year: rwVal("yearGlobal"),
+    make: rwVal("makeGlobal"),
+    model: rwVal("modelGlobal"),
+    engine: rwVal("engineGlobal"),
+    vin: rwVal("vinGlobal"),
+    fault_code: code,
+    symptom: search,
+    confirmed_fix: fix,
+    parts_used: parts,
+    labor_hours: laborRaw ? Number(laborRaw) : null,
+    tech_notes: notes,
+    comeback: false,
+    confidence: 100
+  };
+
+  try{
+    const { data, error } = await supabase
+      .from("verified_fixes")
+      .insert([payload])
+      .select()
+      .single();
+
+    if(error) throw error;
+
+    if(out){
+      out.textContent =
+`✅ VERIFIED FIX SAVED
+
+Search:
+${data.search_term || "—"}
+
+Vehicle:
+${[data.year, data.make, data.model, data.engine].filter(Boolean).join(" ") || "—"}
+
+Fault Code:
+${data.fault_code || "—"}
+
+Confirmed Fix:
+${data.confirmed_fix || "—"}
+
+Parts Used:
+${data.parts_used || "—"}
+
+Labor:
+${data.labor_hours || "—"} hr
+
+Tech Notes:
+${data.tech_notes || "—"}`;
+    }
+  }catch(e){
+    if(out) out.textContent = "Save failed: " + (e.message || e);
+  }
+}
+
+async function findVerifiedFixes(){
+  const search = rwVal("vfSearch") || rwVal("partNumber") || rwVal("diagSearch") || rwVal("partSearch");
+  const code = rwVal("vfCode") || rwVal("faultCode");
+
+  if(!search && !code){
+    alert("Enter a search term or fault code.");
+    return;
+  }
+
+  const out = document.getElementById("vfOut");
+  if(out) out.textContent = "Searching shop memory...";
+
+  try{
+    let q = supabase
+      .from("verified_fixes")
+      .select("*")
+      .order("created_at", { ascending:false })
+      .limit(10);
+
+    if(code){
+      q = q.ilike("fault_code", `%${code}%`);
+    }else{
+      const safe = search.replaceAll(",", " ").replaceAll("%", "");
+      q = q.or(
+        `search_term.ilike.%${safe}%,symptom.ilike.%${safe}%,confirmed_fix.ilike.%${safe}%,parts_used.ilike.%${safe}%,tech_notes.ilike.%${safe}%`
+      );
+    }
+
+    const { data, error } = await q;
+    if(error) throw error;
+
+    if(!data || !data.length){
+      if(out){
+        out.textContent =
+`NO VERIFIED FIX FOUND
+
+Next:
+After this job is repaired, save the confirmed fix so the app learns it.`;
+      }
+      return;
+    }
+
+    if(out){
+      out.textContent = data.map((r, i) =>
+`#${i + 1} ✅ VERIFIED FIX
+
+Search:
+${r.search_term || "—"}
+
+Vehicle:
+${[r.year, r.make, r.model, r.engine].filter(Boolean).join(" ") || "—"}
+
+Code:
+${r.fault_code || "—"}
+
+Confirmed Fix:
+${r.confirmed_fix || "—"}
+
+Parts Used:
+${r.parts_used || "—"}
+
+Labor:
+${r.labor_hours || "—"} hr
+
+Tech Notes:
+${r.tech_notes || "—"}
+
+Confidence:
+${r.confidence || 100}%`
+      ).join("\n\n----------------------\n\n");
+    }
+  }catch(e){
+    if(out) out.textContent = "Search failed: " + (e.message || e);
+  }
+}
+
+/* Optional helper:
+Call this at the end of your regular parts/diagnostic lookup
+to auto-check shop memory using the same search.
+Example: autoCheckVerifiedFixMemory("X15 water pump");
+*/
+async function autoCheckVerifiedFixMemory(term){
+  const out = document.getElementById("vfOut");
+  if(!term || !supabase || !out) return;
+
+  try{
+    const safe = term.replaceAll(",", " ").replaceAll("%", "");
+    const { data, error } = await supabase
+      .from("verified_fixes")
+      .select("*")
+      .or(`search_term.ilike.%${safe}%,symptom.ilike.%${safe}%,confirmed_fix.ilike.%${safe}%,parts_used.ilike.%${safe}%,tech_notes.ilike.%${safe}%`)
+      .order("created_at", { ascending:false })
+      .limit(3);
+
+    if(error || !data || !data.length) return;
+
+    out.textContent =
+`✅ SHOP MEMORY MATCH FOUND
+
+${data.map((r, i) =>
+`#${i + 1}
+${r.confirmed_fix || "—"}
+Parts: ${r.parts_used || "—"}
+Labor: ${r.labor_hours || "—"} hr
+Notes: ${r.tech_notes || "—"}`
+).join("\n\n")}`;
+  }catch(e){
+    console.warn("Verified fix memory check failed", e);
+  }
+}
+
+
+/* =========================================================
+PHASE 19 - ASK CECIL PROCEDURE GENIUS
+Paste near your other functions before closing </script>.
+
+Needs your existing:
+- supabase variable
+- callAI(prompt, context, notes) OR your OpenAI/Edge AI function
+- optional vehicleContext()
+========================================================= */
+
+function cecilVal(id){
+  return document.getElementById(id)?.value?.trim() || "";
+}
+
+function cecilVehicleContext(){
+  if(typeof vehicleContext === "function"){
+    try{ return vehicleContext(); }catch(e){}
+  }
+
+  return [
+    cecilVal("yearGlobal"),
+    cecilVal("makeGlobal"),
+    cecilVal("modelGlobal"),
+    cecilVal("engineGlobal"),
+    cecilVal("vinGlobal") ? "VIN: " + cecilVal("vinGlobal") : ""
+  ].filter(Boolean).join(" ");
+}
+
+function classifyCecilIntent(q){
+  const s = (q || "").toLowerCase();
+
+  if(/remove|disassemble|take off|tear down|pull off|replace|install|assembly|assemble|rebuild/.test(s)) return "procedure";
+  if(/code|spn|fmi|dtc|fault|symptom|diagnose|why|cause|regen|derate|no start|misfire/.test(s)) return "diagnostic";
+  if(/part|parts|seal|gasket|kit|filter|cross|number|oem|aftermarket/.test(s)) return "parts";
+  if(/labor|hours|quote|price|cost|invoice|estimate/.test(s)) return "quote";
+  if(/torque|spec|specs|clearance|pattern|sequence|fluid capacity|capacity/.test(s)) return "specs";
+
+  return "general";
+}
+
+async function askCecilProcedureGenius(){
+  const question =
+    cecilVal("cecilQuestion") ||
+    cecilVal("masterSearch") ||
+    cecilVal("masterInput") ||
+    cecilVal("oracleSearch") ||
+    cecilVal("partNumber") ||
+    cecilVal("diagSearch");
+
+  const out = document.getElementById("cecilOut");
+
+  if(!question){
+    alert("Ask Cecil a repair, parts, specs, labor, or diagnostic question.");
+    return;
+  }
+
+  if(out) out.textContent = "Cecil is thinking... checking shop memory, repair procedures, parts, specs, and AI...";
+
+  const context = cecilVehicleContext();
+  const intent = classifyCecilIntent(question);
+
+  let memoryText = "";
+  let procedureText = "";
+  let kitText = "";
+  let failureText = "";
+
+  try{
+    const safe = question.replaceAll(",", " ").replaceAll("%", "").slice(0, 120);
+
+    if(typeof supabase !== "undefined"){
+      const memory = await supabase
+        .from("verified_fixes")
+        .select("*")
+        .or(`search_term.ilike.%${safe}%,symptom.ilike.%${safe}%,confirmed_fix.ilike.%${safe}%,parts_used.ilike.%${safe}%,tech_notes.ilike.%${safe}%`)
+        .order("created_at", { ascending:false })
+        .limit(3);
+
+      if(memory.data && memory.data.length){
+        memoryText = memory.data.map((r,i)=>`
+SHOP MEMORY #${i+1}
+Fix: ${r.confirmed_fix || "—"}
+Parts: ${r.parts_used || "—"}
+Labor: ${r.labor_hours || "—"} hr
+Notes: ${r.tech_notes || "—"}`).join("\n");
+      }
+
+      const procedures = await supabase
+        .from("repair_procedures")
+        .select("*")
+        .or(`title.ilike.%${safe}%,component.ilike.%${safe}%,procedure_text.ilike.%${safe}%,notes.ilike.%${safe}%`)
+        .limit(3);
+
+      if(procedures.data && procedures.data.length){
+        procedureText = procedures.data.map((r,i)=>`
+PROCEDURE DB #${i+1}
+Title: ${r.title || r.component || "—"}
+Procedure: ${r.procedure_text || r.steps || "—"}
+Notes: ${r.notes || "—"}`).join("\n");
+      }
+
+      const kits = await supabase
+        .from("repair_kits")
+        .select("*")
+        .or(`kit_name.ilike.%${safe}%,component.ilike.%${safe}%,notes.ilike.%${safe}%`)
+        .limit(3);
+
+      if(kits.data && kits.data.length){
+        kitText = kits.data.map((r,i)=>`
+REPAIR KIT #${i+1}
+Kit: ${r.kit_name || r.component || "—"}
+Parts: ${r.parts || r.parts_list || "—"}
+Notes: ${r.notes || "—"}`).join("\n");
+      }
+
+      const failures = await supabase
+        .from("known_failures")
+        .select("*")
+        .or(`component.ilike.%${safe}%,symptom.ilike.%${safe}%,failure.ilike.%${safe}%,notes.ilike.%${safe}%`)
+        .limit(3);
+
+      if(failures.data && failures.data.length){
+        failureText = failures.data.map((r,i)=>`
+KNOWN FAILURE #${i+1}
+Component: ${r.component || "—"}
+Failure: ${r.failure || r.symptom || "—"}
+Notes: ${r.notes || "—"}`).join("\n");
+      }
+    }
+  }catch(e){
+    console.warn("Cecil DB search skipped/failed:", e);
+  }
+
+  const prompt = `
+You are Rolling Cecil AI, a master diesel mechanic, parts specialist, diagnostic tech, and shop foreman.
+
+The user asked:
+"${question}"
+
+Intent classification:
+${intent}
+
+Vehicle context:
+${context || "No vehicle context entered."}
+
+Shop memory found:
+${memoryText || "No verified shop memory found."}
+
+Repair procedure database found:
+${procedureText || "No local repair procedure found."}
+
+Repair kit database found:
+${kitText || "No local repair kit found."}
+
+Known failures database found:
+${failureText || "No known failure match found."}
+
+Answer the question no matter what it asks, as long as it is about repair, parts, diagnostics, labor, specs, tools, or shop workflow.
+
+Use this exact format:
+
+✅ SHORT ANSWER
+Give the direct answer first.
+
+✅ WHAT THIS IS / WHAT IT DOES
+Explain component or system simply.
+
+✅ VEHICLE / ENGINE CONTEXT
+Use year/make/model/engine/VIN if present. Say what still needs verified.
+
+✅ SAFETY FIRST
+List hazards, battery disconnect, fluids, pressure, hot parts, lifting, blocking, PPE.
+
+✅ TOOLS NEEDED
+Common tools and specialty tools.
+
+✅ PARTS / SEALS / GASKETS LIKELY NEEDED
+List likely parts, but do not claim exact OEM part numbers unless verified by VIN/ESN/catalog/shop data.
+
+✅ DISASSEMBLY / REMOVAL STEPS
+Give clear step-by-step instructions.
+
+✅ CLEANING / INSPECTION
+What to inspect while it is apart.
+
+✅ ASSEMBLY / INSTALL STEPS
+Give clear step-by-step install instructions.
+
+✅ TORQUE / SPECS
+Give safe spec guidance.
+If exact torque/spec is not verified, say:
+VERIFY OEM SERVICE MANUAL BY VIN/ESN BEFORE FINAL TORQUE.
+Never invent exact torque specs.
+
+✅ COMMON MISTAKES
+List mistakes techs make.
+
+✅ DIAGNOSTIC CHECKS
+Tests to confirm root cause before replacing parts.
+
+✅ LABOR RANGE
+Give realistic labor range and what changes it.
+
+✅ ADD TO QUOTE
+Labor, parts, supplies, coolant/oil/fluid, shop supplies, diagnostic time.
+
+✅ VERIFIED FIX MEMORY
+Summarize any shop memory provided. If none, tell the tech to save the confirmed fix after repair.
+
+Rules:
+- Be useful even when data is incomplete.
+- Do not say you cannot help just because exact specs are missing.
+- Use VERIFY warnings for exact part numbers, torque specs, fluid capacities, and service bulletin-sensitive items.
+- Sound like a real diesel shop foreman.
+`;
+
+  try{
+    let answer = "";
+
+    if(typeof callAI === "function"){
+      answer = await callAI(prompt, context, question);
+    }else if(typeof askAI === "function"){
+      answer = await askAI(prompt);
+    }else if(typeof callOracleAI === "function"){
+      answer = await callOracleAI(prompt);
+    }else{
+      answer =
+`AI function not found.
+
+Your app needs one existing AI call function named one of these:
+- callAI(prompt, context, notes)
+- askAI(prompt)
+- callOracleAI(prompt)
+
+The Cecil prompt is ready, but it needs to connect to your AI backend.`;
+    }
+
+    if(out) out.textContent = answer;
+  }catch(e){
+    if(out) out.textContent = "Cecil AI failed: " + (e.message || e);
+  }
+}
+
+function clearCecilGenius(){
+  const q = document.getElementById("cecilQuestion");
+  const out = document.getElementById("cecilOut");
+  if(q) q.value = "";
+  if(out) out.textContent = "Ask Cecil anything: remove, install, diagnose, parts, specs, labor, quote.";
+}
+
+
+/* =========================================================
+   MASTER SEARCH HOOK PATCH
+   Paste this INSIDE your existing runMasterSearch()
+   or masterSearch() function.
+   ========================================================= */
+
+const searchTerm =
+document.getElementById("masterSearch")?.value ||
+document.getElementById("masterInput")?.value ||
+document.getElementById("oracleSearch")?.value ||
+"";
+
+await rc21_runRepairKitPatch(searchTerm);
+
+/* =========================================================
+   END PATCH
+   ========================================================= */
+
+
+// ===============================
+// AUTO AI FALLBACK LOOKUP PATCH
+// ===============================
+
+async function lookupPart() {
+
+  const q =
+    $("partNumber")?.value?.trim() ||
+    $("partSearch")?.value?.trim() ||
+    $("masterSearch")?.value?.trim();
+
+  if (!q) {
+    alert("Enter part, engine, VIN, or repair question");
+    return;
+  }
+
+  const out = $("partOut") || $("brainOut") || $("masterOut");
+
+  if (out) {
+    out.innerHTML = "Searching local database first...";
+  }
+
+  try {
+
+    // ===============================
+    // LOCAL DATABASE SEARCH
+    // ===============================
+
+    const { data: local, error: localErr } =
+      await supabase.rpc(
+        "expanded_backend_search",
+        { q }
+      );
+
+    if (localErr) throw localErr;
+
+    // ===============================
+    // LOCAL RESULTS FOUND
+    // ===============================
+
+    if (local && local.length > 0) {
+
+      if (typeof renderPartResults === "function") {
+        renderPartResults(local);
+      } else {
+
+        out.innerHTML = `
+          <div class="resultBox">
+            <h2>LOCAL DATABASE RESULTS</h2>
+            <pre>${JSON.stringify(local, null, 2)}</pre>
+          </div>
+        `;
+      }
+
+      return;
+    }
+
+    // ===============================
+    // AI / WEB FALLBACK
+    // ===============================
+
+    if (out) {
+      out.innerHTML =
+        "No local match. Searching AI/web fallback...";
+    }
+
+    const { data: ai, error: aiErr } =
+      await supabase.functions.invoke(
+        "bright-task",
+        {
+          body: {
+            mode: "part_lookup",
+            query: q,
+            instruction:
+              "Find OEM part number options, aftermarket crosses, fitment warnings, required gaskets/seals, labor notes, and torque/spec warnings. Do not guess. If exact part depends on VIN/ESN/CPL, say so clearly."
+          }
+        }
+      );
+
+    if (aiErr) throw aiErr;
+
+    const answer =
+      ai?.answer ||
+      ai?.result ||
+      ai?.text ||
+      JSON.stringify(ai, null, 2);
+
+    // ===============================
+    // RENDER RESULTS
+    // ===============================
+
+    if (out) {
+      out.innerHTML = `
+        <div class="resultBox">
+          <h2>AI / WEB FALLBACK RESULT</h2>
+          <pre>${answer}</pre>
+        </div>
+      `;
+    }
+
+    // ===============================
+    // AUTO SAVE TO SHOP MEMORY
+    // ===============================
+
+    await supabase.from("repair_memory").insert({
+      search_term: q,
+      result_text: answer,
+      source: "auto_ai_fallback",
+      verified: false
+    });
+
+  } catch (err) {
+
+    if (out) {
+      out.innerHTML =
+        "Lookup failed: " + err.message;
+    }
+
+    console.error(err);
+  }
+}
+
+// ===============================
+// BUTTON PATCH
+// ===============================
+
+// CHANGE YOUR BUTTON TO:
+//
+// <button onclick="lookupPart()">
+//   LOOKUP PART
+// </button>
+
+
+// FIXED engine_patch.js
+
+async function runEnginePatch() {
+  const something = "ok";
+
+  const result = await supabase
+    .from('big_4_parts')
+    .select('*');
+
+  console.log(result);
+}
+
+
+/* =====================================================
+   ROLLING CECIL AI - PHASE 20 FRONTEND PATCH
+   Smart Repair Kit Logic
+   Paste near the bottom of app.js, before final boot/init block.
+   ===================================================== */
+
+function rc20_clean(v){
+  return (v || "").toString().trim();
+}
+
+function rc20_first(arr){
+  return Array.isArray(arr) && arr.length ? arr[0] : null;
+}
+
+function rc20_list(title, items){
+  if(!items || !items.length) return "";
+  return `
+    <div class="rc20-mini">
+      <b>${title}</b>
+      <ul>${items.map(x=>`<li>${x}</li>`).join("")}</ul>
+    </div>
+  `;
+}
+
+function rc20_renderRepairKit(result){
+  const kitWrap = result?.repair_kit_answer || result;
+  const kits = kitWrap?.repair_kits || [];
+  const kit = rc20_first(kits);
+
+  if(!kit){
+    return `
+      <div class="card warn">
+        <h3>SMART REPAIR KIT</h3>
+        <p>No repair kit saved yet for this component.</p>
+        <p>Next: save confirmed gaskets, seals, hardware, labor, and torque notes after the job.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card rc20-kit-card">
+      <h3>SMART REPAIR KIT</h3>
+      <h2>${kit.kit_name || "Repair Kit"}</h2>
+
+      <div class="rc20-oem">Primary OEM: ${kit.primary_oem || "VERIFY"}</div>
+      ${kit.primary_alt ? `<div class="rc20-alt">Alt / Reman: ${kit.primary_alt}</div>` : ""}
+
+      ${rc20_list("Gaskets", kit.gaskets)}
+      ${rc20_list("Seals", kit.seals)}
+      ${rc20_list("O-rings", kit.o_rings)}
+      ${rc20_list("Hardware", kit.hardware)}
+      ${rc20_list("Fluids", kit.fluids)}
+      ${rc20_list("Related Parts", kit.related_parts)}
+      ${rc20_list("While You're There", kit.while_there_checks)}
+      ${rc20_list("Common Failures", kit.common_failures)}
+
+      <div class="rc20-labor">
+        Labor: ${kit.labor_hours || "VERIFY"} hrs
+      </div>
+
+      <div class="rc20-note">
+        <b>Torque:</b> ${kit.torque_notes || "Verify by service manual."}
+      </div>
+
+      <div class="rc20-note">
+        <b>Repair Note:</b> ${kit.repair_notes || "Verify procedure by manual."}
+      </div>
+
+      <div class="rc20-verify">
+        Verify by VIN / ESN / CPL before ordering.
+      </div>
+    </div>
+  `;
+}
+
+async function smartRepairKitLookup(component, engine, oem){
+  const { data, error } = await supabase.rpc("smart_repair_kit_lookup", {
+    part_query: component,
+    raw_engine_text: engine || null,
+    oem_text: oem || null
+  });
+
+  if(error) throw error;
+  return data;
+}
+
+async function partsTechRepairAnswer(component, engine){
+  const { data, error } = await supabase.rpc("parts_tech_repair_answer", {
+    part_query: component,
+    raw_engine_text: engine || null
+  });
+
+  if(error) throw error;
+  return data;
+}
+
+/* Optional button hook:
+   onclick="runSmartRepairKitFromParts()"
+*/
+async function runSmartRepairKitFromParts(){
+  try{
+    const engine =
+      rc20_clean($("partsTechEngine")?.value) ||
+      rc20_clean($("engineGlobal")?.value) ||
+      rc20_clean($("engine")?.value) ||
+      "X15";
+
+    const component =
+      rc20_clean($("partsTechComponent")?.value) ||
+      rc20_clean($("partNumber")?.value) ||
+      rc20_clean($("partSearch")?.value) ||
+      "water pump";
+
+    const out = $("partsTechOut") || $("partOut") || $("masterOut");
+
+    if(out) out.innerHTML = "<div class='card'>Building smart repair kit...</div>";
+
+    const result = await partsTechRepairAnswer(component, engine);
+
+    if(out){
+      out.innerHTML += rc20_renderRepairKit(result);
+    }
+
+    return result;
+
+  }catch(err){
+    console.error(err);
+    const out = $("partsTechOut") || $("partOut") || $("masterOut");
+    if(out) out.innerHTML += `<div class="warn">Smart repair kit failed: ${err.message}</div>`;
+  }
+}
+
+
+/* ============================================================
+   ROLLING CECIL AI - PHASE 21
+   REPAIR KIT QUERY FIX
+   Purpose:
+   - X 15 / X15 / ISX15 all detect as X15
+   - water pump detects as water pump
+   - repair_kits search checks BOTH component and part_type
+   - works with older repair_kits table layouts
+   Paste near bottom of app.js, before final init/boot code.
+   ============================================================ */
+
+function rc21_detectEngine(search){
+  const s = (search || "").toUpperCase().replace(/\s+/g,"").replace(/-/g,"");
+
+  if(s.includes("ISX15")) return "X15";
+  if(s.includes("X15")) return "X15";
+
+  if(s.includes("DD15")) return "DD15";
+  if(s.includes("DD13")) return "DD13";
+
+  if(s.includes("MX13")) return "MX13";
+  if(s.includes("PACCARMX13")) return "MX13";
+
+  if(s.includes("D13")) return "D13";
+
+  return "UNKNOWN";
+}
+
+function rc21_detectComponent(search){
+  const s = (search || "").toLowerCase();
+
+  if(s.includes("water pump") || s.includes("coolant pump")) return "water pump";
+  if(s.includes("fuel filter")) return "fuel filter";
+  if(s.includes("oil filter") || s.includes("lube filter")) return "oil filter";
+  if(s.includes("turbo actuator") || s.includes("vgt actuator")) return "turbo actuator";
+  if(s.includes("turbo")) return "turbo";
+  if(s.includes("injector")) return "injector";
+  if(s.includes("nox")) return "nox sensor";
+  if(s.includes("delta pressure")) return "delta pressure sensor";
+  if(s.includes("egr")) return "egr";
+
+  return s.trim();
+}
+
+async function rc21_lookupRepairKits(searchText){
+  const engine = rc21_detectEngine(searchText);
+  const component = rc21_detectComponent(searchText);
+
+  console.log("RC21 engine:", engine);
+  console.log("RC21 component:", component);
+
+  // Preferred: use component column if it exists
+  let kits = [];
+  let error1 = null;
+  let error2 = null;
+
+  try{
+    const res1 = await supabase
+      .from("repair_kits")
+      .select("*")
+      .eq("engine_family", engine)
+      .ilike("component", `%${component}%`);
+
+    kits = res1.data || [];
+    error1 = res1.error;
+
+    if(error1) console.warn("RC21 component query warning:", error1.message);
+  }catch(e){
+    error1 = e;
+    console.warn("RC21 component query failed:", e.message);
+  }
+
+  // Fallback: older table may use part_type instead of component
+  if(!kits.length){
+    try{
+      const res2 = await supabase
+        .from("repair_kits")
+        .select("*")
+        .eq("engine_family", engine)
+        .ilike("part_type", `%${component}%`);
+
+      kits = res2.data || [];
+      error2 = res2.error;
+
+      if(error2) console.warn("RC21 part_type query warning:", error2.message);
+    }catch(e){
+      error2 = e;
+      console.warn("RC21 part_type query failed:", e.message);
+    }
+  }
+
+  // Final fallback: use smart_repair_kits table from Phase 20 if available
+  if(!kits.length){
+    try{
+      const res3 = await supabase
+        .from("smart_repair_kits")
+        .select("*")
+        .eq("engine_family", engine)
+        .ilike("component", `%${component}%`);
+
+      kits = res3.data || [];
+
+      if(res3.error) console.warn("RC21 smart_repair_kits warning:", res3.error.message);
+    }catch(e){
+      console.warn("RC21 smart_repair_kits failed:", e.message);
+    }
+  }
+
+  return {
+    engine,
+    component,
+    kits,
+    count: kits.length,
+    error1,
+    error2
+  };
+}
+
+function rc21_renderRepairKitBox(result){
+  if(!result || !result.kits || !result.kits.length){
+    return `
+      <div class="card warn">
+        <h3>SMART REPAIR KIT</h3>
+        <p>NO KIT</p>
+        <p>Engine: ${result?.engine || "UNKNOWN"} / Component: ${result?.component || "UNKNOWN"}</p>
+      </div>
+    `;
+  }
+
+  const k = result.kits[0];
+
+  const oem = k.oem_part || k.primary_oem || k.oem_part_number || "VERIFY";
+  const alt = k.alt_part || k.primary_alt || k.aftermarket_part_number || "";
+  const labor = k.labor_hours || "VERIFY";
+  const notes = k.notes || k.repair_notes || "Verify by VIN / ESN / CPL.";
+
+  return `
+    <div class="card rc21-kit">
+      <h3>SMART REPAIR KIT</h3>
+      <h2>${result.engine} ${result.component}</h2>
+      <div class="rc21-oem">OEM: ${oem}</div>
+      ${alt ? `<div class="rc21-alt">REMAN / ALT: ${alt}</div>` : ""}
+      <div class="rc21-line">Labor: ${labor} hrs</div>
+      <p>${notes}</p>
+      <div class="rc21-verify">Verify by VIN / ESN / CPL before ordering.</div>
+    </div>
+  `;
+}
+
+/*
+  Hook function you can call from any master search.
+  If your existing master output uses another div, change "masterOut" below.
+*/
+async function rc21_runRepairKitPatch(searchText){
+  const result = await rc21_lookupRepairKits(searchText);
+
+  console.log("RC21 repair kit result:", result);
+
+  const out =
+    document.getElementById("masterOut") ||
+    document.getElementById("partOut") ||
+    document.getElementById("partsTechOut");
+
+  if(out){
+    out.innerHTML += rc21_renderRepairKitBox(result);
+  }
+
+  return result;
+}
+
+/*
+  HOW TO WIRE:
+  Inside your master search function, after searchTerm is created, add:
+
+  await rc21_runRepairKitPatch(searchTerm);
+
+*/
+
+
+window.addEventListener("DOMContentLoaded",()=>{
+  const vi = document.getElementById("rwVisionImage");
+  if(vi) vi.addEventListener("change", previewRollingWrenchVisionImage);
+});
