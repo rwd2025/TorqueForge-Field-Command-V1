@@ -1,0 +1,51 @@
+TorqueForge Field Command V1
+
+REAL BUILD PACKAGE - built from the uploaded archive set.
+
+Main runnable app files:
+- index.html
+- style.css
+- app.js (large command-center app, 6000+ lines)
+- settings-fix.js
+- startup-home-fix.js
+- quantum-brain.js
+- manifest.json
+- service-worker.js
+
+Included working/local modules from the source builds:
+- Dashboard / Command Center
+- Ask AI style command bar and local assistant workflows
+- Customers
+- Trucks / Equipment
+- VIN / Unit profile fields
+- Repair HUD
+- Fault / diagnostic memory
+- Parts lookup and cross reference flow
+- Smart repair kit patches preserved
+- Quotes
+- Work orders
+- Invoices
+- Signature capture
+- Send quote / invoice customer portal flow
+- Time clock / one-clock upgrade source preserved
+- Schedule
+- PM due tracker
+- Inventory
+- Suppliers
+- Reports / earnings style modules
+- OCR scanner screen and local extraction workflow
+- Photos/files input support where browser allows
+- Settings managers: theme, employee, pricing, alerts, sound, display, AI, OCR, cloud/backup, security
+- Local storage save/load
+- Export/import backup
+- Supabase SQL and backend patches preserved
+- Heavy-duty seed spreadsheets preserved
+
+Legacy source included so nothing badass is thrown away:
+- legacy_source_best/
+- legacy_uploads_original_zips/
+- backend_sql/
+- seed_data/
+
+Important:
+This package runs offline first through browser/localStorage. Supabase, Render, Square, live AI/OCR, and VIN/parts web APIs still require real keys/endpoints to be added in settings/backend config. The local app itself should not load as a blank shell.

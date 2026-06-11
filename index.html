@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Rolling Wrench Diesel | Rolling Cecil AI</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="manifest" href="manifest.json" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+<div class="appShell">
+
+  <!-- TOP HEADER -->
+  <header class="topBar">
+    <button class="iconBtn" onclick="toggleSideMenu()">☰</button>
+
+    <div class="brandBlock">
+      <div class="brandMain">
+        <span>ROLLING</span> WRENCH
+      </div>
+      <div class="brandSub">ROLLING WRENCH AI</div>
+    </div>
+
+    <div class="topStatus">
+      <span class="onlineDot"></span>
+      <span>ONLINE</span>
+    </div>
+
+    <button class="iconBtn" onclick="showScreen('settings')">⚙️</button>
+  </header>
+
+  <!-- SIDE MENU -->
+  <aside id="sideMenu" class="sideMenu">
+    <button onclick="showScreen('settings')">⚙️ Settings</button>
+    <button onclick="showScreen('invoice')">💵 Invoice / Quote</button>
+    <button onclick="showScreen('visionAI')">📷 Vision AI</button>
+    <button onclick="showScreen('askCecil')">🧠 Procedure Genius</button>
+    <button onclick="showScreen('verifiedFix')">✅ Verified Fix Memory</button>
+    <button onclick="showScreen('team')">👥 Team / Tech Viewer</button>
+    <button onclick="showScreen('voice')">🎙️ Voice Navigator</button>
+    <button onclick="toggleSideMenu()">✖ Close</button>
+  </aside>
+
+  <!-- ACTIVE TRUCK CARD -->
+  <section class="truckCard">
+    <div class="truckImage">🚛</div>
+
+    <div class="truckData">
+      <div class="dataCell">
+        <small>VIN</small>
+        <strong id="activeVin">NONE</strong>
+      </div>
+      <div class="dataCell">
+        <small>YEAR</small>
+        <strong id="activeYear">----</strong>
+      </div>
+      <div class="dataCell">
+        <small>MAKE</small>
+        <strong id="activeMake">----</strong>
+      </div>
+      <div class="dataCell">
+        <small>MODEL</small>
+        <strong id="activeModel">----</strong>
+      </div>
+      <div class="dataCell">
+        <small>ENGINE</small>
+        <strong id="activeEngine">----</strong>
+      </div>
+      <div class="dataCell">
+        <small>ESN</small>
+        <strong id="activeEsn">----</strong>
+      </div>
+      <div class="dataCell">
+        <small>CPL</small>
+        <strong id="activeCpl">----</strong>
+      </div>
+      <button class="changeTruckBtn" onclick="showScreen('vin')">CHANGE TRUCK</button>
+    </div>
+  </section>
+
+  <!-- HOME SCREEN -->
+  <main id="home" class="screen active">
+    <h1 class="heroTitle">ROLLING WRENCH AI</h1>
+
+    <section class="searchPanel">
+      <div class="searchBox">
+        <span>🔎</span>
+        <textarea id="doctorAsk" placeholder="Ask Diesel Doctor... VIN, part number, fault code, symptom, repair question..."></textarea>
+      </div>
+      <button class="searchBtn" onclick="runDoctorSearch()">SEARCH</button>
+    </section>
+
+    <section id="doctorOut" class="resultBox miniResult">
+      Ready. Enter a VIN, part, fault code, symptom, or repair question.
+    </section>
+
+    <section class="toolGrid">
+      <button class="toolCard" onclick="showScreen('vin')">
+        <div class="toolIcon">🚛</div>
+        <h2>VIN / TRUCK LOOKUP</h2>
+        <p>Decode VIN, ESN, CPL and vehicle info</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard" onclick="showScreen('parts')">
+        <div class="toolIcon">⚙️</div>
+        <h2>OEM PARTS LOOKUP</h2>
+        <p>Search OEM parts, interchange, pricing</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard" onclick="showScreen('dieselAI')">
+        <div class="toolIcon">🧠</div>
+        <h2>DIESEL AI</h2>
+        <p>Ask anything about diesel repair</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard" onclick="showScreen('faultDoctor')">
+        <div class="toolIcon">🛠️</div>
+        <h2>FAULT DOCTOR</h2>
+        <p>Diagnose fault codes and symptoms</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard" onclick="showScreen('repairHud')">
+        <div class="toolIcon">🔧</div>
+        <h2>REPAIR HUD</h2>
+        <p>Step-by-step repair with specs & torque</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard" onclick="showScreen('schematics')">
+        <div class="toolIcon">🧩</div>
+        <h2>LIVE SCHEMATICS</h2>
+        <p>Interactive diagrams & component maps</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard locked" onclick="showScreen('voice')">
+        <div class="toolIcon">🎙️</div>
+        <h2>VOICE NAVIGATOR</h2>
+        <p>Hands-free guidance for mechanics</p>
+        <em>UNDER CONSTRUCTION</em>
+      </button>
+
+      <button class="toolCard locked" onclick="showScreen('team')">
+        <div class="toolIcon">👥</div>
+        <h2>TEAM / TECH VIEWER</h2>
+        <p>See what techs see, in real-time</p>
+        <em>UNDER CONSTRUCTION</em>
+      </button>
+
+      <button class="toolCard" onclick="showScreen('invoice')">
+        <div class="toolIcon">💵</div>
+        <h2>INVOICE / QUOTE</h2>
+        <p>Create invoices and quotes</p>
+        <span>→</span>
+      </button>
+
+
+      <button class="toolCard elite" onclick="showScreen('visionAI')">
+        <div class="toolIcon">📷</div>
+        <h2>VISION AI</h2>
+        <p>Take/upload repair photos, identify parts, leaks, wiring, brakes, and get next checks</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard elite" onclick="showScreen('askCecil')">
+        <div class="toolIcon">🧠</div>
+        <h2>PROCEDURE GENIUS</h2>
+        <p>Removal, install, diagnostic, specs, labor, and quote workflow</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard elite" onclick="showScreen('verifiedFix')">
+        <div class="toolIcon">✅</div>
+        <h2>VERIFIED FIX MEMORY</h2>
+        <p>Save confirmed fixes, parts used, labor, notes, and search shop memory</p>
+        <span>→</span>
+      </button>
+
+      <button class="toolCard elite" onclick="showScreen('smartKits')">
+        <div class="toolIcon">🧰</div>
+        <h2>SMART REPAIR KITS</h2>
+        <p>Gaskets, seals, hardware, fluids, labor, torque warnings, and while-you're-there checks</p>
+        <span>→</span>
+      </button>
+      <button class="toolCard" onclick="showScreen('settings')">
+        <div class="toolIcon">⚙️</div>
+        <h2>SETTINGS</h2>
+        <p>App settings, preferences, tools</p>
+        <span>→</span>
+      </button>
+    </section>
+
+    <section class="statusGrid">
+      <div><b>☁️ CONNECTION</b><span>Online</span><small>All systems operational</small></div>
+      <div><b>🛡️ OEM GATEWAY</b><span>Connected</span><small>PACCAR, Cummins, Detroit ready</small></div>
+      <div><b>🗄️ PARTS DATABASE</b><span>Ready</span><small>Oracle lookup connected</small></div>
+      <div><b>🧠 REPAIR INSIGHTS</b><span>Ready</span><small>Buddy system prepared</small></div>
+    </section>
+  </main>
+
+  <!-- VIN SCREEN -->
+  <main id="vin" class="screen">
+    <h1 class="screenTitle">VIN / TRUCK LOOKUP</h1>
+
+    <div class="formGrid">
+      <label>VIN<input id="vinGlobal" placeholder="Enter VIN"></label>
+      <label>YEAR<input id="yearGlobal" placeholder="2019"></label>
+      <label>MAKE<input id="makeGlobal" placeholder="International"></label>
+      <label>MODEL<input id="modelGlobal" placeholder="LT625"></label>
+      <label>ENGINE<input id="engine" placeholder="Cummins X15"></label>
+      <label>ESN<input id="esnGlobal" placeholder="Engine serial"></label>
+      <label>CPL<input id="cplGlobal" placeholder="CPL"></label>
+    </div>
+
+    <div class="buttonRow">
+      <button onclick="decodeVin()">DECODE VIN</button>
+      <button onclick="saveActiveTruck()">SAVE ACTIVE TRUCK</button>
+    </div>
+    <button class="secondaryBtn" onclick="clearVehicleData()">CLEAR VIN / TRUCK</button>
+
+    <section id="vinOut" class="resultBox">Enter VIN and decode or save active truck.</section>
+  </main>
+
+  <!-- PARTS SCREEN -->
+  <main id="parts" class="screen">
+    <h1 class="screenTitle">OEM PARTS LOOKUP</h1>
+    <label>PART NUMBER / PART NAME<textarea id="partq" placeholder="Example: 2022 PACCAR MX-13 water pump"></textarea></label>
+    <label>NOTES / VIN / ESN / CPL<textarea id="partNote" placeholder="Add VIN, ESN, CPL or notes"></textarea></label>
+
+    <div class="buttonRow">
+      <button onclick="askPart()">LOOKUP PART</button>
+      <button onclick="findNearestDealer()">FIND NEAREST PARTS / DEALER</button>
+    </div>
+
+    <section id="partOut" class="resultBox">Enter a part, VIN, ESN, CPL, or description.</section>
+  </main>
+
+  <!-- DIESEL AI SCREEN -->
+  <main id="dieselAI" class="screen">
+    <h1 class="screenTitle">DIESEL AI</h1>
+    <label>ASK DIESEL AI<textarea id="homeAiAsk" placeholder="Ask a diagnostic, repair, parts, or truck question"></textarea></label>
+    <label class="fileLabel">PICTURE<input id="homeAiImage" type="file" accept="image/*"></label>
+    <img id="homeAiPreview" class="previewImg" alt="">
+    <div class="buttonRow">
+      <button onclick="homeAI()">SEND</button>
+      <button onclick="startVoiceInput()">VOICE</button>
+    </div>
+    <section id="homeAiOut" class="resultBox">Ask Diesel AI anything.</section>
+  </main>
+
+  <!-- FAULT DOCTOR -->
+  <main id="faultDoctor" class="screen">
+    <h1 class="screenTitle">FAULT DOCTOR</h1>
+    <label>FAULT CODE / SYMPTOM<textarea id="diagq" placeholder="SPN 5246 FMI 15, derate, regen issue, NOx efficiency..."></textarea></label>
+    <label>NOTES<textarea id="diagNote" placeholder="Engine, symptoms, readings, tests already done"></textarea></label>
+    <button onclick="runDiag()">RUN FAULT DOCTOR</button>
+    <section id="diagOut" class="resultBox">Enter fault code or symptom.</section>
+  </main>
+
+  <!-- REPAIR HUD -->
+  <main id="repairHud" class="screen">
+    <h1 class="screenTitle">REPAIR HUD</h1>
+    <section class="resultBox">
+      <h2>Repair HUD Ready</h2>
+      <p>This screen is prepared for step-by-step repairs, torque sequence, Buddy tips, OEM bulletins, part verification, and completion reports.</p>
+      <button onclick="underConstruction('Repair HUD Backend')">START REPAIR SESSION</button>
+    </section>
+  </main>
+
+  <!-- SCHEMATICS -->
+  <main id="schematics" class="screen">
+    <h1 class="screenTitle">LIVE SCHEMATICS</h1>
+    <section class="schematicBox">
+      <div class="xrayHeader">Interactive Repair Catalog</div>
+      <svg viewBox="0 0 800 420" class="demoSchematic">
+        <rect x="40" y="60" width="720" height="280" rx="24"></rect>
+        <circle class="neonPulse" cx="230" cy="180" r="26"></circle>
+        <circle class="neonPulse delay" cx="420" cy="240" r="22"></circle>
+        <circle class="neonPulse delay2" cx="585" cy="155" r="24"></circle>
+        <text x="210" y="185">#1</text>
+        <text x="400" y="245">#2</text>
+        <text x="565" y="160">#3</text>
+      </svg>
+      <div id="part-hud">
+        Tap hotspots later to show OEM part, interchange, torque, dealer stock, and Buddy warnings.
+      </div>
+      <button onclick="underConstruction('Live Schematics Backend')">LOAD OEM DIAGRAM</button>
+    </section>
+  </main>
+
+  <!-- VOICE -->
+  <main id="voice" class="screen">
+    <h1 class="screenTitle">VOICE NAVIGATOR</h1>
+    <section class="resultBox">
+      <h2>Under Construction</h2>
+      <p>This button is ready. Voice-to-voice repair guidance will plug in here.</p>
+      <button id="voice-toggle" onclick="VoiceNavigator.toggle()">VOICE: OFF</button>
+    </section>
+  </main>
+
+  <!-- TEAM -->
+  <main id="team" class="screen">
+    <h1 class="screenTitle">TEAM / TECH VIEWER</h1>
+    <section class="resultBox">
+      <h2>Under Construction</h2>
+      <p>This button is ready. Team viewer, master tech support, shared screens, and tech status will plug in here.</p>
+    </section>
+  </main>
+
+  <!-- INVOICE -->
+  <main id="invoice" class="screen">
+    <h1 class="screenTitle">INVOICE / QUOTE</h1>
+    <div class="formGrid">
+      <label>CUSTOMER<input id="custName"></label>
+      <label>PHONE<input id="custPhone"></label>
+      <label>TRUCK<input id="invoiceTruck"></label>
+      <label>VIN<input id="invoiceVin"></label>
+      <label>LABOR HOURS<input id="laborHours" type="number" step="0.1"></label>
+      <label>LABOR RATE<input id="laborRate" type="number"></label>
+      <label>SERVICE CALL<input id="serviceCall" type="number"></label>
+      <label>PARTS COST<input id="partsCost" type="number"></label>
+      <label>TAX %<input id="taxRate" type="number"></label>
+      <label>CARD FEE %<input id="cardFee" type="number"></label>
+    </div>
+    <label>WORK / PARTS DESCRIPTION<textarea id="laborDesc"></textarea></label>
+    <div class="buttonRow">
+      <button onclick="buildInvoice()">BUILD INVOICE</button>
+      <button onclick="copyText('quoteOut')">COPY</button>
+    </div>
+    <section id="quoteOut" class="resultBox">Invoice output will appear here.</section>
+  </main>
+
+  <!-- SETTINGS -->
+  <main id="settings" class="screen">
+    <h1 class="screenTitle">SETTINGS</h1>
+    <div class="formGrid">
+      <label>SHOP NAME<input id="shopName" value="Rolling Wrench Diesel LLC"></label>
+      <label>PHONE<input id="shopPhone" value="260-502-6222"></label>
+      <label>WEBSITE<input id="shopWebsite" value="www.rollingwrenchdiesel.com"></label>
+      <label>DEFAULT LABOR RATE<input id="defaultLaborRate" value="135"></label>
+      <label>DEFAULT SERVICE CALL<input id="defaultServiceCall" value="250"></label>
+      <label>DEFAULT TAX %<input id="defaultTax" value="0"></label>
+      <label>DEFAULT CARD FEE %<input id="defaultCardFee" value="0"></label>
+    </div>
+    <label>TERMS<textarea id="shopTerms">Payment due upon completion. Parts and labor warranty subject to shop policy.</textarea></label>
+    <button onclick="saveSettings()">SAVE SETTINGS</button>
+    <section id="settingsOut" class="resultBox">Settings ready.</section>
+  </main>
+
+
+  <!-- VISION AI -->
+  <main id="visionAI" class="screen">
+    <h1 class="screenTitle">ROLLING WRENCH AI VISION</h1>
+    <!-- =========================================================
+ROLLING WRENCH AI VISION CARD
+Take a picture, upload saved pictures, ask a question, get a useful repair answer.
+Paste this where you want the camera/photo AI box.
+========================================================= -->
+<div class="smartCard" id="rwVisionCard">
+  <div class="cardTitleRow">
+    <h2>📸 ROLLING WRENCH AI VISION</h2>
+    <span class="pill green">PHOTO + QUESTION</span>
+  </div>
+
+  <label>Take picture / choose saved picture</label>
+  <input id="rwVisionImage" type="file" accept="image/*" capture="environment" onchange="previewRollingWrenchVisionImage()">
+
+  <img id="rwVisionPreview" style="display:none; width:100%; max-height:320px; object-fit:contain; border-radius:14px; margin:12px 0; border:1px solid #333;">
+
+  <label>Ask about the picture</label>
+  <textarea id="rwVisionQuestion" placeholder="What is this part? How do I remove it? Is this leaking? What should I check? What part number do I need?"></textarea>
+
+  <div class="row">
+    <button class="success" onclick="askRollingWrenchVisionAI()">ASK ROLLING WRENCH AI</button>
+    <button onclick="clearRollingWrenchVisionAI()">CLEAR</button>
+  </div>
+
+  <div id="rwVisionOut" class="result">Take or upload a picture and ask Rolling Wrench AI what you need to know.</div>
+</div>
+
+  </main>
+
+  <!-- ASK CECIL / PROCEDURE GENIUS -->
+  <main id="askCecil" class="screen">
+    <h1 class="screenTitle">PROCEDURE GENIUS</h1>
+    <!-- =========================================================
+PHASE 19 - ASK CECIL PROCEDURE GENIUS CARD
+Paste this where you want the universal AI/procedure box.
+========================================================= -->
+<div class="smartCard" id="askCecilCard">
+  <div class="cardTitleRow">
+    <h2>🧠 ASK CECIL</h2>
+    <span class="pill green">PROCEDURE GENIUS</span>
+  </div>
+
+  <label>Ask anything</label>
+  <textarea id="cecilQuestion" placeholder="How do I remove an MX13 water pump? What specs do I need? What causes SPN 2791? What parts do I need?"></textarea>
+
+  <div class="row">
+    <button class="success" onclick="askCecilProcedureGenius()">ASK CECIL</button>
+    <button onclick="clearCecilGenius()">CLEAR</button>
+  </div>
+
+  <div id="cecilOut" class="result">Ask Cecil anything: remove, install, diagnose, parts, specs, labor, quote.</div>
+</div>
+
+  </main>
+
+  <!-- VERIFIED FIX MEMORY -->
+  <main id="verifiedFix" class="screen">
+    <h1 class="screenTitle">VERIFIED FIX MEMORY</h1>
+    <!-- =========================================================
+PHASE 18 - VERIFIED FIX SYSTEM CARD
+Paste this card where your Diesel Brain / Smart Repair Kit cards are.
+========================================================= -->
+<div class="smartCard" id="verifiedFixCard">
+  <div class="cardTitleRow">
+    <h2>✅ VERIFIED FIX</h2>
+    <span class="pill green">SHOP MEMORY</span>
+  </div>
+
+  <label>Symptom / Search</label>
+  <input id="vfSearch" placeholder="X15 water pump leak, SPN 2791, no regen...">
+
+  <label>Fault Code</label>
+  <input id="vfCode" placeholder="SPN / FMI / P-code">
+
+  <label>Confirmed Fix</label>
+  <textarea id="vfFix" placeholder="What actually fixed it?"></textarea>
+
+  <label>Parts Used</label>
+  <textarea id="vfParts" placeholder="OEM part numbers, seals, gaskets, fluids..."></textarea>
+
+  <label>Labor Hours</label>
+  <input id="vfLabor" type="number" step="0.1" placeholder="2.5">
+
+  <label>Tech Notes</label>
+  <textarea id="vfNotes" placeholder="Warnings, tricks, torque specs, test steps..."></textarea>
+
+  <div class="row">
+    <button class="success" onclick="saveVerifiedFix()">SAVE VERIFIED FIX</button>
+    <button onclick="findVerifiedFixes()">SEARCH FIX MEMORY</button>
+  </div>
+
+  <div id="vfOut" class="result">No verified fix loaded.</div>
+</div>
+
+  </main>
+
+  <!-- SMART REPAIR KITS -->
+  <main id="smartKits" class="screen">
+    <h1 class="screenTitle">SMART REPAIR KITS</h1>
+    <section class="smartCard">
+      <div class="cardTitleRow"><h2>🧰 SMART REPAIR KIT BUILDER</h2><span class="pill green">PARTS + LABOR</span></div>
+      <label>ENGINE<input id="partsTechEngine" placeholder="X15, DD15, MX13, A26..."></label>
+      <label>COMPONENT / JOB<textarea id="partsTechComponent" placeholder="water pump, front main seal, EGR cooler, turbo actuator..."></textarea></label>
+      <div class="row">
+        <button class="success" onclick="runSmartRepairKitFromParts()">BUILD SMART KIT</button>
+        <button onclick="clearSmartKit()">CLEAR</button>
+      </div>
+      <div id="partsTechOut" class="resultBox">Enter engine and component to build a kit.</div>
+    </section>
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottomNav">
+    <button class="active" onclick="showScreen('home')">⌂<span>HOME</span></button>
+    <button onclick="showScreen('faultDoctor')">🩺<span>DOCTOR</span></button>
+    <button onclick="showScreen('parts')">🔎<span>PARTS</span></button>
+    <button onclick="showScreen('visionAI')">📷<span>VISION</span></button>
+    <button onclick="showScreen('settings')">•••<span>MORE</span></button>
+  </nav>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
