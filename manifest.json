@@ -1,0 +1,9 @@
+{
+  "name": "TorqueForge Field Command",
+  "short_name": "TorqueForge",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d0f12",
+  "theme_color": "#ff7a1a",
+  "icons": []
+}
